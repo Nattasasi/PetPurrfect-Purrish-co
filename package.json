@@ -1,0 +1,16 @@
+{
+  "name": "purrishco-mvp",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/web",
+    "apps/api"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace apps/web run dev",
+    "dev:api": "npm --workspace apps/api run dev",
+    "dev": "npm run dev:api",
+    "build:web": "npm --workspace apps/web run build",
+    "start:api": "npm --workspace apps/api run start"
+  }
+}

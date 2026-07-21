@@ -1,0 +1,542 @@
+[
+  {
+    "id": "q1",
+    "text": "How do you usually spend your weekends?",
+    "type": "single",
+    "options": [
+      {
+        "value": "home_relax",
+        "label": "Relaxing at home",
+        "traits": { "energy": -1, "sociability": -1, "independence": 1, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "outdoors",
+        "label": "Going outdoors",
+        "traits": { "energy": 2, "sociability": 0, "independence": 0, "routine": 0, "trainability": 1 }
+      },
+      {
+        "value": "travel",
+        "label": "Traveling",
+        "traits": { "energy": 1, "sociability": 1, "independence": 1, "routine": -1, "trainability": 0 }
+      },
+      {
+        "value": "social",
+        "label": "Hanging out with friends",
+        "traits": { "energy": 1, "sociability": 2, "independence": -1, "routine": 0, "trainability": 0 }
+      }
+    ]
+  },
+  {
+    "id": "q2",
+    "text": "Your ideal home is...",
+    "type": "single",
+    "options": [
+      {
+        "value": "studio",
+        "label": "A compact apartment",
+        "traits": { "energy": -1, "sociability": 0, "independence": 1, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "suburban",
+        "label": "A suburban house",
+        "traits": { "energy": 1, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "farm",
+        "label": "A large place with outdoor space",
+        "traits": { "energy": 2, "sociability": 0, "independence": 1, "routine": 0, "trainability": 1 }
+      },
+      {
+        "value": "flexible",
+        "label": "I can adapt to any space",
+        "traits": { "energy": 0, "sociability": 1, "independence": 1, "routine": -1, "trainability": 0 }
+      }
+    ]
+  },
+  {
+    "id": "q3",
+    "text": "How active are you during weekdays?",
+    "type": "single",
+    "options": [
+      {
+        "value": "low",
+        "label": "Mostly low activity",
+        "traits": { "energy": -2, "sociability": 0, "independence": 1, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "moderate",
+        "label": "Balanced activity",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "high",
+        "label": "Very active",
+        "traits": { "energy": 2, "sociability": 1, "independence": 0, "routine": 0, "trainability": 1 }
+      },
+      {
+        "value": "varied",
+        "label": "Changes every day",
+        "traits": { "energy": 1, "sociability": 1, "independence": 1, "routine": -2, "trainability": -1 }
+      }
+    ]
+  },
+  {
+    "id": "q4",
+    "text": "How social are you with new people?",
+    "type": "single",
+    "options": [
+      {
+        "value": "reserved",
+        "label": "Quite reserved",
+        "traits": { "energy": -1, "sociability": -2, "independence": 1, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "warmup",
+        "label": "Warm up slowly",
+        "traits": { "energy": 0, "sociability": -1, "independence": 1, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "friendly",
+        "label": "Generally friendly",
+        "traits": { "energy": 1, "sociability": 1, "independence": 0, "routine": 0, "trainability": 1 }
+      },
+      {
+        "value": "outgoing",
+        "label": "Very outgoing",
+        "traits": { "energy": 1, "sociability": 2, "independence": -1, "routine": -1, "trainability": 0 }
+      }
+    ]
+  },
+  {
+    "id": "q5",
+    "text": "How often can you do grooming or maintenance?",
+    "type": "single",
+    "options": [
+      {
+        "value": "minimal",
+        "label": "Only minimal care",
+        "traits": { "energy": 0, "sociability": 0, "independence": 1, "routine": -1, "trainability": -1 }
+      },
+      {
+        "value": "weekly",
+        "label": "Weekly routine is fine",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "frequent",
+        "label": "Frequent grooming is okay",
+        "traits": { "energy": 1, "sociability": 0, "independence": -1, "routine": 2, "trainability": 1 }
+      },
+      {
+        "value": "enthusiast",
+        "label": "I enjoy high-maintenance care",
+        "traits": { "energy": 1, "sociability": 1, "independence": -1, "routine": 2, "trainability": 2 }
+      }
+    ]
+  },
+  {
+    "id": "q6",
+    "text": "What noise level suits you best?",
+    "type": "single",
+    "options": [
+      {
+        "value": "quiet",
+        "label": "Very quiet environment",
+        "traits": { "energy": -1, "sociability": -1, "independence": 1, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "moderate_noise",
+        "label": "Some occasional noise is fine",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "lively",
+        "label": "Lively and playful sounds are okay",
+        "traits": { "energy": 1, "sociability": 1, "independence": -1, "routine": 0, "trainability": 1 }
+      },
+      {
+        "value": "very_lively",
+        "label": "I do not mind lots of activity",
+        "traits": { "energy": 2, "sociability": 1, "independence": -1, "routine": -1, "trainability": 0 }
+      }
+    ]
+  },
+  {
+    "id": "q7",
+    "text": "How much daily exercise can you commit to?",
+    "type": "single",
+    "options": [
+      {
+        "value": "short",
+        "label": "10-20 minutes",
+        "traits": { "energy": -2, "sociability": 0, "independence": 1, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "medium",
+        "label": "30-45 minutes",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "long",
+        "label": "60+ minutes",
+        "traits": { "energy": 2, "sociability": 1, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "highly_active",
+        "label": "Multiple activity sessions",
+        "traits": { "energy": 2, "sociability": 1, "independence": 0, "routine": 0, "trainability": 2 }
+      }
+    ]
+  },
+  {
+    "id": "q8",
+    "text": "How do you handle schedules?",
+    "type": "single",
+    "options": [
+      {
+        "value": "strict",
+        "label": "Very strict and planned",
+        "traits": { "energy": 0, "sociability": 0, "independence": -1, "routine": 2, "trainability": 2 }
+      },
+      {
+        "value": "mostly_planned",
+        "label": "Mostly planned",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "flexible_schedule",
+        "label": "Flexible schedule",
+        "traits": { "energy": 1, "sociability": 1, "independence": 1, "routine": -1, "trainability": 0 }
+      },
+      {
+        "value": "spontaneous",
+        "label": "Very spontaneous",
+        "traits": { "energy": 1, "sociability": 1, "independence": 2, "routine": -2, "trainability": -1 }
+      }
+    ]
+  },
+  {
+    "id": "q9",
+    "text": "Which trait best describes you?",
+    "type": "single",
+    "options": [
+      {
+        "value": "calm",
+        "label": "Calm",
+        "traits": { "energy": -2, "sociability": -1, "independence": 1, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "curious",
+        "label": "Curious",
+        "traits": { "energy": 1, "sociability": 0, "independence": 2, "routine": -1, "trainability": 0 }
+      },
+      {
+        "value": "playful",
+        "label": "Playful",
+        "traits": { "energy": 2, "sociability": 1, "independence": -1, "routine": 0, "trainability": 1 }
+      },
+      {
+        "value": "loyal",
+        "label": "Loyal",
+        "traits": { "energy": 0, "sociability": 1, "independence": -1, "routine": 2, "trainability": 2 }
+      }
+    ]
+  },
+  {
+    "id": "q10",
+    "text": "How patient are you with training?",
+    "type": "single",
+    "options": [
+      {
+        "value": "low_patience",
+        "label": "I prefer quick results",
+        "traits": { "energy": 0, "sociability": 0, "independence": 1, "routine": -1, "trainability": -2 }
+      },
+      {
+        "value": "some_patience",
+        "label": "Some patience",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 0, "trainability": 0 }
+      },
+      {
+        "value": "patient",
+        "label": "I can be very patient",
+        "traits": { "energy": 0, "sociability": 0, "independence": -1, "routine": 1, "trainability": 2 }
+      },
+      {
+        "value": "trainer_mindset",
+        "label": "I enjoy teaching and routines",
+        "traits": { "energy": 1, "sociability": 0, "independence": -1, "routine": 2, "trainability": 2 }
+      }
+    ]
+  },
+  {
+    "id": "q11",
+    "text": "How long are you away from home most days?",
+    "type": "single",
+    "options": [
+      {
+        "value": "rarely_away",
+        "label": "Rarely away",
+        "traits": { "energy": 0, "sociability": 1, "independence": -2, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "half_day",
+        "label": "Around half day",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "full_day",
+        "label": "Most of the day",
+        "traits": { "energy": -1, "sociability": -1, "independence": 2, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "variable_hours",
+        "label": "Hours vary a lot",
+        "traits": { "energy": 1, "sociability": 0, "independence": 1, "routine": -2, "trainability": -1 }
+      }
+    ]
+  },
+  {
+    "id": "q12",
+    "text": "Which environment feels best for a companion pet?",
+    "type": "single",
+    "options": [
+      {
+        "value": "indoors",
+        "label": "Mostly indoors",
+        "traits": { "energy": -1, "sociability": 0, "independence": 1, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "mixed",
+        "label": "Balanced indoor/outdoor",
+        "traits": { "energy": 1, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "outdoor_focus",
+        "label": "Outdoor lifestyle",
+        "traits": { "energy": 2, "sociability": 1, "independence": 1, "routine": 0, "trainability": 1 }
+      },
+      {
+        "value": "adventure_mix",
+        "label": "Adventure-focused mix",
+        "traits": { "energy": 2, "sociability": 1, "independence": 1, "routine": -1, "trainability": 0 }
+      }
+    ]
+  },
+  {
+    "id": "q13",
+    "text": "How often do you want playtime sessions?",
+    "type": "single",
+    "options": [
+      {
+        "value": "rare_play",
+        "label": "Occasionally",
+        "traits": { "energy": -2, "sociability": 0, "independence": 1, "routine": 0, "trainability": 0 }
+      },
+      {
+        "value": "daily_play",
+        "label": "Daily short play",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "extended_play",
+        "label": "Daily extended play",
+        "traits": { "energy": 2, "sociability": 1, "independence": -1, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "interactive_games",
+        "label": "Frequent interactive games",
+        "traits": { "energy": 2, "sociability": 1, "independence": -1, "routine": 0, "trainability": 2 }
+      }
+    ]
+  },
+  {
+    "id": "q14",
+    "text": "How do you react to unexpected messes?",
+    "type": "single",
+    "options": [
+      {
+        "value": "stressed",
+        "label": "I get stressed quickly",
+        "traits": { "energy": -1, "sociability": -1, "independence": 1, "routine": 2, "trainability": -1 }
+      },
+      {
+        "value": "manageable",
+        "label": "I can manage with structure",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "calm_response",
+        "label": "I stay calm and fix it",
+        "traits": { "energy": 0, "sociability": 0, "independence": -1, "routine": 1, "trainability": 2 }
+      },
+      {
+        "value": "easygoing",
+        "label": "I am very easygoing",
+        "traits": { "energy": 1, "sociability": 1, "independence": 1, "routine": -1, "trainability": 0 }
+      }
+    ]
+  },
+  {
+    "id": "q15",
+    "text": "How important is emotional companionship to you?",
+    "type": "single",
+    "options": [
+      {
+        "value": "low_bond",
+        "label": "Low priority",
+        "traits": { "energy": 0, "sociability": -1, "independence": 2, "routine": 0, "trainability": 0 }
+      },
+      {
+        "value": "moderate_bond",
+        "label": "Moderately important",
+        "traits": { "energy": 0, "sociability": 0, "independence": 1, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "high_bond",
+        "label": "Very important",
+        "traits": { "energy": 1, "sociability": 1, "independence": -1, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "constant_bond",
+        "label": "I want constant connection",
+        "traits": { "energy": 1, "sociability": 2, "independence": -2, "routine": 1, "trainability": 1 }
+      }
+    ]
+  },
+  {
+    "id": "q16",
+    "text": "How do you feel about teaching boundaries and commands?",
+    "type": "single",
+    "options": [
+      {
+        "value": "avoid_training",
+        "label": "I prefer minimal training",
+        "traits": { "energy": 0, "sociability": 0, "independence": 1, "routine": -1, "trainability": -2 }
+      },
+      {
+        "value": "basic_training",
+        "label": "Basic commands only",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "consistent_training",
+        "label": "Consistent training is fine",
+        "traits": { "energy": 0, "sociability": 0, "independence": -1, "routine": 2, "trainability": 2 }
+      },
+      {
+        "value": "advanced_training",
+        "label": "I enjoy advanced training",
+        "traits": { "energy": 1, "sociability": 0, "independence": -1, "routine": 2, "trainability": 2 }
+      }
+    ]
+  },
+  {
+    "id": "q17",
+    "text": "What best describes your daily energy after work or class?",
+    "type": "single",
+    "options": [
+      {
+        "value": "drained",
+        "label": "Mostly drained",
+        "traits": { "energy": -2, "sociability": -1, "independence": 1, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "steady",
+        "label": "Steady and balanced",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "still_active",
+        "label": "Still active",
+        "traits": { "energy": 2, "sociability": 1, "independence": 0, "routine": 0, "trainability": 1 }
+      },
+      {
+        "value": "very_driven",
+        "label": "Very driven all day",
+        "traits": { "energy": 2, "sociability": 1, "independence": 1, "routine": 0, "trainability": 1 }
+      }
+    ]
+  },
+  {
+    "id": "q18",
+    "text": "How comfortable are you with shedding or fur cleanup?",
+    "type": "single",
+    "options": [
+      {
+        "value": "low_tolerance",
+        "label": "Not comfortable",
+        "traits": { "energy": 0, "sociability": 0, "independence": 1, "routine": 2, "trainability": 0 }
+      },
+      {
+        "value": "some_tolerance",
+        "label": "Somewhat comfortable",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "high_tolerance",
+        "label": "Comfortable with regular cleanup",
+        "traits": { "energy": 1, "sociability": 0, "independence": -1, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "full_tolerance",
+        "label": "No problem at all",
+        "traits": { "energy": 1, "sociability": 1, "independence": -1, "routine": 0, "trainability": 1 }
+      }
+    ]
+  },
+  {
+    "id": "q19",
+    "text": "How often do you host visitors or gatherings?",
+    "type": "single",
+    "options": [
+      {
+        "value": "rare_guests",
+        "label": "Rarely",
+        "traits": { "energy": -1, "sociability": -1, "independence": 1, "routine": 1, "trainability": 0 }
+      },
+      {
+        "value": "monthly_guests",
+        "label": "Occasionally",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "weekly_guests",
+        "label": "Frequently",
+        "traits": { "energy": 1, "sociability": 1, "independence": -1, "routine": 0, "trainability": 1 }
+      },
+      {
+        "value": "very_social_home",
+        "label": "Very often",
+        "traits": { "energy": 1, "sociability": 2, "independence": -1, "routine": -1, "trainability": 0 }
+      }
+    ]
+  },
+  {
+    "id": "q20",
+    "text": "Which statement feels closest to your ideal companion?",
+    "type": "single",
+    "options": [
+      {
+        "value": "independent_companion",
+        "label": "Independent but affectionate",
+        "traits": { "energy": -1, "sociability": 0, "independence": 2, "routine": 0, "trainability": 0 }
+      },
+      {
+        "value": "balanced_companion",
+        "label": "Balanced and adaptable",
+        "traits": { "energy": 0, "sociability": 0, "independence": 0, "routine": 1, "trainability": 1 }
+      },
+      {
+        "value": "playful_companion",
+        "label": "Playful and interactive",
+        "traits": { "energy": 2, "sociability": 1, "independence": -1, "routine": 0, "trainability": 1 }
+      },
+      {
+        "value": "loyal_companion",
+        "label": "Loyal and people-oriented",
+        "traits": { "energy": 1, "sociability": 2, "independence": -2, "routine": 1, "trainability": 2 }
+      }
+    ]
+  }
+]
