@@ -1,7 +1,6 @@
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import HomePage from "./pages/HomePage";
-import ShopPage from "./pages/ShopPage";
 import QuizPage from "./pages/QuizPage";
 import QuizResultPage from "./pages/QuizResultPage";
 import StickerPage from "./pages/StickerPage";
@@ -92,11 +91,6 @@ export default function App() {
               </NavLink>
             </li>
             <li>
-              <NavLink to="/shop" className={({ isActive }) => (isActive ? "active" : undefined)}>
-                Shop
-              </NavLink>
-            </li>
-            <li>
               <NavLink to="/pet" className={({ isActive }) => (isActive ? "active" : undefined)}>
                 For Your Pet
               </NavLink>
@@ -124,11 +118,14 @@ export default function App() {
       </header>
 
       <main>
+        <div hidden={location.pathname !== "/pet"}>
+          <StickerPage />
+        </div>
+        <div hidden={location.pathname !== "/quiz"}>
+          <QuizPage />
+        </div>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/shop" element={<ShopPage />} />
-          <Route path="/pet" element={<StickerPage />} />
-          <Route path="/quiz" element={<QuizPage />} />
           <Route path="/quiz/result" element={<QuizResultPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />

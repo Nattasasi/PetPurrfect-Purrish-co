@@ -28,8 +28,13 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
-.env
+.env*
+
+# local development artifacts
+*.md
+*.sh
+*.pdf
+.vscode/
 
 # vercel
 .vercel

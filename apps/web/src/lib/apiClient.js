@@ -8,7 +8,14 @@ export async function postJson(path, payload) {
   });
 
   if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
+    let message = `Request failed: ${res.status}`;
+    try {
+      const body = await res.json();
+      message = body.message || body.error || message;
+    } catch {
+      // Keep the HTTP status when the server does not return JSON.
+    }
+    throw new Error(message);
   }
 
   return res.json();
@@ -21,3 +28,18 @@ export async function getJson(path) {
   }
   return res.json();
 }
+
+const SESSION_ID_KEY = "purrishco.session.id";
+
+export function createSessionId() {
+  try {
+    const id = typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    return id;
+  } catch {
+    return `session-${Date.now()}`;
+  }
+}
+

@@ -28,9 +28,13 @@ function collectText(...values) {
 function toPetRecord(source, index = 0) {
   const id = source.id || source.slug || source.breed || source.name || `pet-${index + 1}`;
   const name = source.name || source.breed || source.title || `Pet ${index + 1}`;
+  const characteristics = source.characteristics || {};
   const summary = collectText(
     source.summary,
     source.description,
+    characteristics.temperament,
+    characteristics.slogan,
+    characteristics.training,
     source.temperament,
     source.personality,
     source.notes
@@ -38,15 +42,23 @@ function toPetRecord(source, index = 0) {
 
   const rawTraits = {
     energy:
-      normalizeRating(source.energy ?? source.activity ?? source.activityLevel ?? source.exercise),
+      normalizeRating(
+        source.energy ?? source.activity ?? source.activityLevel ?? source.exercise ?? characteristics.temperament
+      ),
     sociability:
-      normalizeRating(source.sociability ?? source.friendliness ?? source.affection ?? source.social),
+      normalizeRating(
+        source.sociability ?? source.friendliness ?? source.affection ?? source.social ?? characteristics.temperament
+      ),
     independence:
-      normalizeRating(source.independence ?? source.independent ?? source.selfSufficient),
+      normalizeRating(source.independence ?? source.independent ?? source.selfSufficient ?? characteristics.group),
     routine:
-      normalizeRating(source.routine ?? source.predictability ?? source.scheduled ?? source.consistency),
+      normalizeRating(
+        source.routine ?? source.predictability ?? source.scheduled ?? source.consistency ?? characteristics.training
+      ),
     trainability:
-      normalizeRating(source.trainability ?? source.trained ?? source.obedience ?? source.intelligence)
+      normalizeRating(
+        source.trainability ?? source.trained ?? source.obedience ?? source.intelligence ?? characteristics.training
+      )
   };
 
   const traits = Object.fromEntries(
@@ -78,7 +90,7 @@ export function isNinjaApiConfigured() {
   return Boolean(process.env.NINJA_API_BASE_URL);
 }
 
-export async function fetchPetKnowledge() {
+export async function fetchPetKnowledge(name) {
   const baseUrl = process.env.NINJA_API_BASE_URL;
   const apiPath = process.env.NINJA_API_PATH || "/pets";
   const apiKey = process.env.NINJA_API_KEY;
@@ -87,7 +99,12 @@ export async function fetchPetKnowledge() {
     return { enabled: false, source: "disabled", records: [] };
   }
 
-  const requestUrl = `${baseUrl.replace(/\/$/, "")}/${apiPath.replace(/^\//, "")}`;
+  if (!name) {
+    return { enabled: true, source: "no-query", records: [] };
+  }
+
+  const query = new URLSearchParams({ name }).toString();
+  const requestUrl = `${baseUrl.replace(/\/$/, "")}/${apiPath.replace(/^\//, "")}?${query}`;
   const headers = {};
 
   if (apiKey) {

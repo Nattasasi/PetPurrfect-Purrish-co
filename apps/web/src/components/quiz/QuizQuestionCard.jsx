@@ -11,7 +11,6 @@ export default function QuizQuestionCard({ question }) {
           <li key={option.value}>{option.label}</li>
         ))}
       </ul>
-      <button>Next</button>
     </article>
   );
 }

@@ -40,20 +40,6 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <section className="stats">
-        <div className="stat">
-          <h2>Mon - Fri</h2>
-          <p>09:00 - 18:00</p>
-        </div>
-        <div className="stat">
-          <h2>Saturday</h2>
-          <p>10:00 - 16:00</p>
-        </div>
-        <div className="stat">
-          <h2>Sunday</h2>
-          <p>Closed</p>
-        </div>
-      </section>
     </>
   );
 }

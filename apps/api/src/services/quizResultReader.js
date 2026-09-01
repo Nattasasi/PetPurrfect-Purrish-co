@@ -32,3 +32,47 @@ export async function listRecentQuizResults(limit = 10) {
     }))
   };
 }
+
+export async function getLatestQuizResultForSession(sessionId) {
+  if (!sessionId) {
+    return null;
+  }
+
+  try {
+    const db = await getMongoDb();
+
+    if (!db) {
+      return null;
+    }
+
+    const collectionName =
+      process.env.MONGODB_QUIZ_RESULTS_COLLECTION || "quiz_results";
+
+    const doc = await db
+      .collection(collectionName)
+      .find({ sessionId })
+      .sort({ createdAt: -1 })
+      .limit(1)
+      .next();
+
+    if (!doc) {
+      return null;
+    }
+
+    return {
+      id: doc._id.toString(),
+      sessionId: doc.sessionId || null,
+      matchId: doc.matchId || null,
+      matchName: doc.matchName || null,
+      confidence: doc.confidence ?? null,
+      topTraits: doc.topTraits || [],
+      traits: doc.traits || {},
+      createdAt: doc.createdAt || null
+    };
+  } catch {
+    // A database outage shouldn't block quiz question generation — just
+    // treat it the same as "no previous result".
+    return null;
+  }
+}
+

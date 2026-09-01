@@ -1,9 +1,32 @@
 import { useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { exportQuizResultImage } from "../lib/shareImage";
 import { resolvePetImageUrl } from "../lib/petImages";
 
-const RESULT_STORAGE_KEY = "purrishco.quiz.result.v1";
+const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
+const QUIZ_STORAGE_VERSION_KEY = "purrishco.quiz.storage.version";
+const QUIZ_STORAGE_VERSION = "v5";
+
+function clearPreviousQuizData() {
+  try {
+    if (localStorage.getItem(QUIZ_STORAGE_VERSION_KEY) === QUIZ_STORAGE_VERSION) {
+      return;
+    }
+    [
+      "purrishco.quiz.answers.v1",
+      "purrishco.quiz.answers.v2",
+      "purrishco.quiz.result.v1",
+      "purrishco.quiz.result.v2",
+      "purrishco.quiz.questions.v2",
+      "purrishco.quiz.questions.v3.ollama"
+    ].forEach((key) => localStorage.removeItem(key));
+    localStorage.setItem(QUIZ_STORAGE_VERSION_KEY, QUIZ_STORAGE_VERSION);
+  } catch {
+    // Ignore storage restrictions and show no stale result.
+  }
+}
+
+clearPreviousQuizData();
 
 function readStoredResult() {
   try {
@@ -90,7 +113,10 @@ export default function QuizResultPage() {
             <li>Share your result image with friends</li>
             <li>Try the sticker generator for your pet photo</li>
             <li>
-              Explore products in the <Link to="/shop">shop page</Link>
+              Explore products in the{" "}
+              <a href="https://shopee.co.th/purrishandco?entryPoint=ShopBySearch&searchKeyword=purrish" target="_blank" rel="noreferrer">
+                shop page
+              </a>
             </li>
           </ul>
         </div>

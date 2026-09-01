@@ -15,7 +15,7 @@ export default function HomePage() {
             friend.
           </p>
           <div className="hero-buttons">
-            <a href="/shop" className="btn btn-primary">
+            <a href="https://shopee.co.th/purrishandco?entryPoint=ShopBySearch&searchKeyword=purrish" target="_blank" rel="noreferrer" className="btn btn-primary">
               Shop Now
             </a>
             <a href="/pet" className="btn btn-outline">
@@ -122,7 +122,7 @@ export default function HomePage() {
       <section className="cta">
         <h2>Ready to make your pet feel extra special?</h2>
         <p>Join thousands of happy pet owners today.</p>
-        <a href="/shop" className="btn btn-primary">
+        <a href="https://shopee.co.th/purrishandco?entryPoint=ShopBySearch&searchKeyword=purrish" target="_blank" rel="noreferrer" className="btn btn-primary">
           Start Shopping
         </a>
       </section>

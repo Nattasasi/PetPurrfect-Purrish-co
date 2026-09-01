@@ -65,3 +65,79 @@ export function exportQuizResultImage(payload) {
   link.href = canvas.toDataURL("image/png");
   link.click();
 }
+
+export function exportStickerResultImage(payload) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1080;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return;
+  }
+
+  const petName = payload?.petName || "Your Pet";
+  const title = payload?.title || "Purrish&Co. Sticker";
+  const subtitle = payload?.subtitle || "Custom pet sticker preview";
+
+  ctx.fillStyle = "#fff7f3";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#ffd8e4";
+  ctx.beginPath();
+  ctx.arc(540, 430, 300, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(60, 60, 960, 180);
+
+  ctx.fillStyle = "#ff7fa8";
+  ctx.font = "bold 50px Poppins, sans-serif";
+  ctx.fillText(title, 110, 160);
+
+  ctx.fillStyle = "#333";
+  ctx.font = "600 62px Poppins, sans-serif";
+  ctx.fillText(petName, 360, 790);
+
+  ctx.fillStyle = "#666";
+  ctx.font = "500 32px Poppins, sans-serif";
+  const subtitleLines = [subtitle.slice(0, 22), subtitle.slice(22, 44)].filter(Boolean);
+  subtitleLines.forEach((line, index) => {
+    ctx.fillText(line, 360, 860 + index * 44);
+  });
+
+  const stickerImage = new Image();
+  stickerImage.crossOrigin = "anonymous";
+  stickerImage.onload = () => {
+    const size = 420;
+    const x = 540 - size / 2;
+    const y = 250 - size / 2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(540, 410, size / 2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(stickerImage, x, y, size, size);
+    ctx.restore();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(540, 410, size / 2 + 18, 0, Math.PI * 2);
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = "#ffd7e5";
+    ctx.stroke();
+
+    const link = document.createElement("a");
+    link.download = "purrishco-sticker.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  stickerImage.src = payload?.imageUrl || "";
+  if (!payload?.imageUrl) {
+    const link = document.createElement("a");
+    link.download = "purrishco-sticker.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+}

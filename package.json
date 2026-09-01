@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev:web": "npm --workspace apps/web run dev",
+    "dev:web:fast": "bash scripts/dev-web.sh",
     "dev:api": "npm --workspace apps/api run dev",
     "dev": "npm run dev:api",
     "build:web": "npm --workspace apps/web run build",

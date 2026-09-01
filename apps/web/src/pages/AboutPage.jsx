@@ -51,27 +51,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="team-section">
-        <h2>Meet Our Team</h2>
-
-        <div className="cards">
-          <div className="card">
-            <img src="/images/team1.jpg" alt="Team member" />
-            <h3>Mya Tagu</h3>
-            <p>Frontend Developer</p>
-          </div>
-          <div className="card">
-            <img src="/images/team2.jpg" alt="Team member" />
-            <h3>Team Member</h3>
-            <p>Backend Developer</p>
-          </div>
-          <div className="card">
-            <img src="/images/team3.jpg" alt="Team member" />
-            <h3>Team Member</h3>
-            <p>AI Developer</p>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
