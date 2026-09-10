@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Purrish&Co.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="login-page">
+    <main class="login-shell">
+        <section class="login-brand">
+            <a class="brand" href="../index.html">🐾 Purrish&Co.</a>
+            <span class="eyebrow">Admin workspace</span>
+            <h1>Keep every order, product and customer in one place.</h1>
+            <p>Securely manage the Purrish&Co. store and see live business activity.</p>
+            <div class="login-feature-list">
+                <span><i class="fa-solid fa-chart-line"></i> Live analytics</span>
+                <span><i class="fa-solid fa-box"></i> Stock control</span>
+                <span><i class="fa-solid fa-shield-halved"></i> Role-protected access</span>
+            </div>
+        </section>
+
+        <section class="login-card">
+            <div class="login-card-heading">
+                <div class="login-icon"><i class="fa-solid fa-paw"></i></div>
+                <div>
+                    <p class="eyebrow">Welcome back</p>
+                    <h2>Admin sign in</h2>
+                </div>
+            </div>
+
+            <div id="config-warning" class="alert alert-warning hidden" role="alert">
+                Firebase is not configured yet. Open <strong>js/firebase-config.js</strong> and paste your Firebase Web App configuration.
+            </div>
+            <div id="login-error" class="alert alert-error hidden" role="alert"></div>
+
+            <form id="login-form">
+                <label for="email">Email address</label>
+                <div class="input-with-icon">
+                    <i class="fa-regular fa-envelope"></i>
+                    <input id="email" type="email" autocomplete="email" placeholder="admin@purrishco.com" required>
+                </div>
+
+                <label for="password">Password</label>
+                <div class="input-with-icon">
+                    <i class="fa-solid fa-lock"></i>
+                    <input id="password" type="password" autocomplete="current-password" placeholder="Enter your password" minlength="6" required>
+                    <button id="toggle-password" class="icon-button password-toggle" type="button" aria-label="Show password">
+                        <i class="fa-regular fa-eye"></i>
+                    </button>
+                </div>
+
+                <button id="login-button" class="primary-button full-button" type="submit">
+                    <span>Sign in</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <button id="forgot-password" class="text-button" type="button">Forgot password?</button>
+            </form>
+
+            <a class="back-link" href="../index.html"><i class="fa-solid fa-arrow-left"></i> Back to customer website</a>
+        </section>
+    </main>
+    <script type="module" src="js/login.js"></script>
+</body>
+</html>
+
