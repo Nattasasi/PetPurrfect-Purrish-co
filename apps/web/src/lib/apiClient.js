@@ -43,3 +43,57 @@ export function createSessionId() {
   }
 }
 
+// Fetches a sanitized public quiz result for shared links (/quiz/result/:id).
+// Returns null when the result no longer exists or persistence is disabled.
+export async function getPublicQuizResult(id) {
+  try {
+    const res = await fetch(`${API_BASE}/api/quiz/results/${encodeURIComponent(id)}`);
+    if (!res.ok) {
+      return null;
+    }
+    const body = await res.json();
+    return body?.result || null;
+  } catch {
+    return null;
+  }
+}
+
+// Records that the current user shared their result on a platform. Never
+// throws — analytics must not block the share action itself.
+export async function trackShareEvent(resultId, platform) {
+  if (!resultId) {
+    return;
+  }
+  try {
+    await fetch(`${API_BASE}/api/quiz/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resultId, platform })
+    });
+  } catch {
+    // Ignore analytics failures.
+  }
+}
+
+// Records that this session arrived via a shared link (UTM attribution).
+export async function trackLandingEvent(payload) {
+  try {
+    await fetch(`${API_BASE}/api/quiz/landing`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    // Ignore analytics failures.
+  }
+}
+
+export async function getShareAnalytics() {
+  return getJson("/api/quiz/share/analytics");
+}
+
+export async function generateStickerCaptions(breed, attributes) {
+  const response = await postJson("/api/sticker/caption", { breed, attributes });
+  return Array.isArray(response.captions) ? response.captions : [];
+}
+

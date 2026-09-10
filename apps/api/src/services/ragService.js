@@ -6,6 +6,8 @@ import { env } from "../config/env.js";
 const TRAIT_KEYS = ["energy", "sociability", "independence", "routine", "trainability"];
 const OLLAMA_TIMEOUT_MS = 300000;
 const GROUNDING_CANDIDATE_COUNT = 3;
+const MAX_SHARE_CAPTIONS = 3;
+const MAX_SHARE_CAPTION_LENGTH = 180;
 
 const FALLBACK_PROFILES = [
   {
@@ -128,6 +130,67 @@ async function generateGroundedSummary(traits, rankedCandidates) {
   }
 }
 
+function buildShareCaptionFallback(selected, context = "pet personality quiz") {
+  if (context.includes("sticker")) {
+    return [
+      `My pet just got turned into a ${selected.name} sticker by Purrish&Co. 🐾 Create yours and share it!`,
+      `I made a custom ${selected.name} sticker with Purrish&Co.! What would your pet look like?`,
+      `Would your pet get the same result? Try the Purrish&Co. sticker maker and find out! ✨`
+    ];
+  }
+
+  return [
+    `My Purrish&Co. quiz says I'm a match for a ${selected.name} 🐾 What pet matches you?`,
+    `Apparently, my personality matches a ${selected.name}. Take the Purrish&Co. quiz and find yours!`,
+    `Would you get the same result? Discover your person-pet match with Purrish&Co. ✨`
+  ];
+}
+
+function buildShareCaptionPrompt(selected, traits, context = "pet personality quiz result") {
+  return `Create exactly 3 short social media captions for a ${context}.
+
+Trusted facts:
+- Matched pet: ${selected.name}
+- User traits: ${JSON.stringify(traits)}
+- Product: Purrish&Co. person-pet quiz
+
+Rules:
+- Return JSON only in this exact shape: {"captions":["caption 1","caption 2","caption 3"]}
+- Each caption must be 80 words or fewer and ${MAX_SHARE_CAPTION_LENGTH} characters or fewer.
+- Make each caption distinct, friendly, and invite another person to take the quiz.
+- Do not invent pet facts, discounts, prizes, or claims about accuracy.
+- Emojis are optional.`;
+}
+
+function parseShareCaptions(raw, fallback) {
+  try {
+    const jsonText = raw.match(/\{[\s\S]*\}/)?.[0];
+    const parsed = JSON.parse(jsonText || "{}");
+    const captions = Array.isArray(parsed.captions)
+      ? parsed.captions
+        .filter((caption) => typeof caption === "string")
+        .map((caption) => caption.trim())
+        .filter((caption) => caption.length > 0 && caption.length <= MAX_SHARE_CAPTION_LENGTH)
+        .slice(0, MAX_SHARE_CAPTIONS)
+      : [];
+
+    return captions.length === MAX_SHARE_CAPTIONS ? captions : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function generateShareCaptions(selected, traits, context = "pet personality quiz result") {
+  const fallback = buildShareCaptionFallback(selected, context);
+
+  try {
+    const raw = await callOllama(buildShareCaptionPrompt(selected, traits, context));
+    return parseShareCaptions(raw, fallback);
+  } catch {
+    return fallback;
+  }
+}
+
 function buildGrounding(selected, sourceLabel) {
   return [
     {
@@ -166,7 +229,12 @@ export async function evaluateQuiz(payload = {}) {
   const groundingCandidates = ninjaRecord
     ? [{ ...selected, summary: ninjaRecord.summary }, ...ranked.slice(1, GROUNDING_CANDIDATE_COUNT)]
     : ranked.slice(0, GROUNDING_CANDIDATE_COUNT);
-  const groundedSummary = await generateGroundedSummary(traits, groundingCandidates);
+  const [groundedSummaryResult, shareCaptionsResult] = await Promise.all([
+    generateGroundedSummary(traits, groundingCandidates),
+    generateShareCaptions(selected, traits)
+  ]);
+  const groundedSummary = groundedSummaryResult;
+  const shareCaptions = shareCaptionsResult;
   const breedImageUrl = await fetchBreedImageUrl(queryName, selected.petType);
 
   const response = {
@@ -188,7 +256,9 @@ export async function evaluateQuiz(payload = {}) {
       ninjaRecord?.summary ||
       selected.summary ||
       "This recommendation is computed from your quiz trait profile and external pet data.",
-    traits
+    traits,
+    shareCaptions,
+    shareCaptionModel: env.ollama.model
   };
 
   let persistence = { enabled: false, saved: false };
@@ -204,6 +274,8 @@ export async function evaluateQuiz(payload = {}) {
       traits,
       topTraits: payload.topTraits || [],
       answers,
+      shareCaptions: response.shareCaptions,
+      shareCaptionModel: response.shareCaptionModel,
       provider: response.provider,
       sourceCount: response.sourceCount,
       generatedAt: new Date().toISOString()

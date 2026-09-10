@@ -19,6 +19,8 @@ export async function saveQuizResult(payload) {
     traits: payload.traits || {},
     topTraits: payload.topTraits || [],
     answers: payload.answers || [],
+    shareCaptions: payload.shareCaptions || [],
+    shareCaptionModel: payload.shareCaptionModel || null,
     generatedAt: payload.generatedAt || new Date().toISOString(),
     createdAt: new Date()
   };

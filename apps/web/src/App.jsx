@@ -6,6 +6,7 @@ import QuizResultPage from "./pages/QuizResultPage";
 import StickerPage from "./pages/StickerPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
+import ShareAnalyticsPage from "./pages/ShareAnalyticsPage";
 
 export default function App() {
   const location = useLocation();
@@ -127,8 +128,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/quiz/result" element={<QuizResultPage />} />
+          <Route path="/quiz/result/:id" element={<QuizResultPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/admin/share" element={<ShareAnalyticsPage />} />
         </Routes>
       </main>
 

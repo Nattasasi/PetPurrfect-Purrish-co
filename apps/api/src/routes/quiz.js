@@ -1,6 +1,15 @@
 import { Router } from "express";
 import { evaluateQuiz } from "../services/ragService.js";
-import { listRecentQuizResults, getLatestQuizResultForSession } from "../services/quizResultReader.js";
+import {
+  listRecentQuizResults,
+  getLatestQuizResultForSession,
+  getPublicQuizResult
+} from "../services/quizResultReader.js";
+import {
+  recordShareEvent,
+  recordLandingEvent,
+  getShareAnalytics
+} from "../services/shareAnalyticsRepository.js";
 import { generateAdaptiveQuestions, getStaticQuestions } from "../services/quizQuestionService.js";
 
 const router = Router();
@@ -55,6 +64,70 @@ router.get("/results/recent", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: "quiz_results_fetch_failed",
+      message: error?.message || "Unexpected server error"
+    });
+  }
+});
+
+// Public sanitized result used by shared links: /quiz/result/:id
+router.get("/results/:id", async (req, res) => {
+  try {
+    const result = await getPublicQuizResult(req.params.id);
+    if (!result) {
+      res.status(404).json({ error: "quiz_result_not_found" });
+      return;
+    }
+    res.json({ result });
+  } catch (error) {
+    res.status(500).json({
+      error: "quiz_result_fetch_failed",
+      message: error?.message || "Unexpected server error"
+    });
+  }
+});
+
+// Top of the viral funnel: someone shared their result on a platform.
+router.post("/share", async (req, res) => {
+  try {
+    const outcome = await recordShareEvent({
+      resultId: typeof req.body?.resultId === "string" ? req.body.resultId : null,
+      platform: typeof req.body?.platform === "string" ? req.body.platform : "unknown"
+    });
+    res.json(outcome);
+  } catch (error) {
+    res.status(500).json({
+      error: "share_event_failed",
+      message: error?.message || "Unexpected server error"
+    });
+  }
+});
+
+// Bottom of the viral funnel: a new visitor arrived via a shared link.
+router.post("/landing", async (req, res) => {
+  try {
+    const outcome = await recordLandingEvent({
+      resultId: typeof req.body?.resultId === "string" ? req.body.resultId : null,
+      utmSource: req.body?.utmSource,
+      utmMedium: req.body?.utmMedium,
+      utmCampaign: req.body?.utmCampaign
+    });
+    res.json(outcome);
+  } catch (error) {
+    res.status(500).json({
+      error: "landing_event_failed",
+      message: error?.message || "Unexpected server error"
+    });
+  }
+});
+
+// Share funnel analytics: shares and resulting landings per platform.
+router.get("/share/analytics", async (_req, res) => {
+  try {
+    const analytics = await getShareAnalytics();
+    res.json(analytics);
+  } catch (error) {
+    res.status(500).json({
+      error: "share_analytics_failed",
       message: error?.message || "Unexpected server error"
     });
   }

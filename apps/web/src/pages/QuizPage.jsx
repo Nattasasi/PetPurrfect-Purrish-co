@@ -3,7 +3,9 @@ import staticQuizQuestions from "../data/quizQuestions.json";
 import { scoreQuiz } from "../lib/quizScoring";
 import { postJson, createSessionId } from "../lib/apiClient";
 import { getPetImageById, resolvePetImageUrl } from "../lib/petImages";
+import { exportQuizResultImage, createQuizResultImageFile } from "../lib/shareImage";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
+import ShareResultCard from "../components/share/ShareResultCard";
 
 const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const STATIC_QUESTION_COUNT = 5;
@@ -155,6 +157,7 @@ export default function QuizPage() {
       resultPayload = {
         ...resultPayload,
         source: "api",
+        persistence: result.persistence || null,
         match: {
           id: result.match?.id || computedScoring.recommendation.id,
           name: result.match?.name || computedScoring.recommendation.name,
@@ -169,6 +172,7 @@ export default function QuizPage() {
         },
         summary: result.summary || computedScoring.recommendation.summary,
         grounding: result.grounding || [],
+        shareCaptions: result.shareCaptions || [],
         imageUrl: resolvePetImageUrl(
           result.match?.imageUrl || result.imageUrl,
           result.match?.id || computedScoring.recommendation.id
@@ -296,6 +300,22 @@ export default function QuizPage() {
               <div className="quiz-buttons">
                 <button className="btn btn-primary" type="button" onClick={resetQuiz}>Retake Quiz</button>
               </div>
+              <ShareResultCard
+                title="Share your quiz result"
+                subtitle={`${displayResult.name} · ${Math.round((displayResult.confidence || 0) * 100)}% confidence`}
+                shareText={`🐾 The Purrish&Co. quiz says I'm a match for a ${displayResult.name}! ${Math.round((displayResult.confidence || 0) * 100)}% confidence. Curious what pet fits YOU? Take the quiz! ✨`}
+                shareCaptions={displayResult.shareCaptions}
+                onDownload={() => exportQuizResultImage({
+                  match: { name: displayResult.name, confidence: displayResult.confidence },
+                  summary: displayResult.summary,
+                  topTraits: scoring.topTraits
+                })}
+                getShareFile={() => createQuizResultImageFile({
+                  match: { name: displayResult.name, confidence: displayResult.confidence },
+                  summary: displayResult.summary,
+                  topTraits: scoring.topTraits
+                })}
+              />
             </div>
           ) : (
             <>

@@ -1,8 +1,14 @@
 import { useEffect, useRef } from "react";
-import { exportStickerResultImage } from "../lib/shareImage";
+import { exportStickerResultImage, createStickerResultImageFile } from "../lib/shareImage";
 import { createPetDebugImage, runPetInference } from "../lib/cv/inference";
 import { composeStickerImage } from "../lib/stickerComposer";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
+import { generateStickerCaptions } from "../lib/apiClient";
+import ShareResultCard from "../components/share/ShareResultCard";
+
+function capitalize(value) {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+}
 
 export default function StickerPage() {
   const inputRef = useRef(null);
@@ -17,6 +23,7 @@ export default function StickerPage() {
   const [debugMode, setDebugMode] = useInMemoryPageState("sticker.debugMode", true);
   const [detectedAttributes, setDetectedAttributes] = useInMemoryPageState("sticker.detectedAttributes", {});
   const [composedStickerUrl, setComposedStickerUrl] = useInMemoryPageState("sticker.composedStickerUrl", "");
+  const [shareCaptions, setShareCaptions] = useInMemoryPageState("sticker.shareCaptions", []);
 
   useEffect(() => {
     if (isGenerated) {
@@ -42,6 +49,7 @@ export default function StickerPage() {
     setDebugImageUrl("");
     setDetectedAttributes({});
     setComposedStickerUrl("");
+    setShareCaptions([]);
   };
 
   const handleGenerateSticker = async () => {
@@ -73,6 +81,17 @@ export default function StickerPage() {
       setAnalysisError("");
       setIsGenerated(true);
       setIsAnalyzing(false);
+
+      // Caption generation is non-blocking: the sticker is usable immediately,
+      // and the local captions remain available if Ollama cannot be reached.
+      try {
+        const captions = await generateStickerCaptions(inference.breed, inference.attributes);
+        if (captions.length > 0) {
+          setShareCaptions(captions);
+        }
+      } catch {
+        // ShareResultCard uses its supplied static caption when Ollama is unavailable.
+      }
     };
 
     img.onerror = () => {
@@ -82,19 +101,6 @@ export default function StickerPage() {
     };
 
     img.src = imageUrl;
-  };
-
-  const handleDownload = () => {
-    if (!imageUrl) {
-      return;
-    }
-
-    exportStickerResultImage({
-      title: "Purrish&Co. Sticker",
-      subtitle: "Your custom pet sticker",
-      petName: fileName ? fileName.replace(/\.[^/.]+$/, "") : "Your Pet",
-      imageUrl: composedStickerUrl || imageUrl
-    });
   };
 
   const resetUpload = () => {
@@ -110,6 +116,7 @@ export default function StickerPage() {
     setDebugImageUrl("");
     setDetectedAttributes({});
     setComposedStickerUrl("");
+    setShareCaptions([]);
 
     if (inputRef.current) {
       inputRef.current.value = "";
@@ -119,6 +126,27 @@ export default function StickerPage() {
   const petDescriptor = analysisResult?.validPet
     ? `${analysisResult.breed} · ${detectedAttributes.furColor || "playful"} fur · ${detectedAttributes.faceShape || "round"} face`
     : "Upload a cat or dog photo to begin analysis";
+
+  const stickerShareCaption = analysisResult?.validPet
+    ? `🐾 My pet just got turned into a ${analysisResult.breed} sticker by Purrish&Co! ${capitalize(detectedAttributes.furColor || "playful")} fur, ${detectedAttributes.faceShape || "round"} face, 100% adorable. Get yours free with every order! 🐶✨`
+    : "";
+
+  const handleDownload = () => {
+    exportStickerResultImage({
+      title: "Purrish&Co. Sticker",
+      subtitle: "Your custom pet sticker",
+      petName: fileName ? fileName.replace(/\.[^/.]+$/, "") : "Your Pet",
+      imageUrl: composedStickerUrl || imageUrl
+    });
+  };
+
+  const getShareFile = () =>
+    createStickerResultImageFile({
+      title: "Purrish&Co. Sticker",
+      subtitle: "Your custom pet sticker",
+      petName: fileName ? fileName.replace(/\.[^/.]+$/, "") : "Your Pet",
+      imageUrl: composedStickerUrl || imageUrl
+    });
 
   return (
     <>
@@ -232,11 +260,14 @@ export default function StickerPage() {
                 <p className="sticker-detection">Detected: {petDescriptor}</p>
               </div>
 
-              <div className="sticker-result-actions">
-                <button type="button" className="btn btn-primary" onClick={handleDownload}>
-                  Download Sticker PNG
-                </button>
-              </div>
+              <ShareResultCard
+                title="Share your sticker"
+                subtitle={petDescriptor}
+                shareText={stickerShareCaption}
+                shareCaptions={shareCaptions}
+                onDownload={handleDownload}
+                getShareFile={getShareFile}
+              />
             </div>
           ) : (
             <>
