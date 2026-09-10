@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import staticQuizQuestions from "../data/quizQuestions.json";
 import { scoreQuiz } from "../lib/quizScoring";
-import { postJson, createSessionId } from "../lib/apiClient";
+import { postJson, createSessionId, getDebugBreedImage } from "../lib/apiClient";
 import { getPetImageById, resolvePetImageUrl } from "../lib/petImages";
 import { exportQuizResultImage, createQuizResultImageFile } from "../lib/shareImage";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
@@ -11,6 +11,12 @@ const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const STATIC_QUESTION_COUNT = 5;
 const ADAPTIVE_QUESTION_COUNT = 15;
 const TOTAL_QUESTION_COUNT = STATIC_QUESTION_COUNT + ADAPTIVE_QUESTION_COUNT;
+const DEBUG_MATCHES = [
+  { id: "golden_retriever", name: "Golden Retriever", petType: "dog", summary: "Friendly, social, and well-suited to active owners." },
+  { id: "shiba_inu", name: "Shiba Inu", petType: "dog", summary: "Independent, alert, and confident with a balanced routine." },
+  { id: "ragdoll_cat", name: "Ragdoll Cat", petType: "cat", summary: "Calm, affectionate, and ideal for relaxed households." },
+  { id: "border_collie", name: "Border Collie", petType: "dog", summary: "Highly trainable and built for active, structured lifestyles." }
+];
 
 function clearSavedQuizProgress() {
   try {
@@ -72,6 +78,7 @@ export default function QuizPage() {
         summary: apiResult.summary || "AI result generated.",
         confidence: apiResult.match.confidence,
         grounding: apiResult.grounding || [],
+        shareCaptions: apiResult.shareCaptions || [],
         imageUrl: resolvePetImageUrl(apiResult.match.imageUrl || apiResult.imageUrl, apiResult.match.id)
       };
     }
@@ -82,6 +89,7 @@ export default function QuizPage() {
       summary: scoring.recommendation.summary,
       confidence: scoring.recommendation.confidence,
       grounding: [],
+      shareCaptions: [],
       imageUrl: getPetImageById(scoring.recommendation.id)
     };
   }, [apiResult, scoring]);
@@ -252,11 +260,42 @@ export default function QuizPage() {
     setQuestions(STATIC_QUESTIONS);
   };
 
+  const showDebugResult = async () => {
+    const match = DEBUG_MATCHES[Math.floor(Math.random() * DEBUG_MATCHES.length)];
+    const confidence = Number((0.72 + Math.random() * 0.27).toFixed(3));
+    const realImageUrl = await getDebugBreedImage(match.name, match.petType);
+    const debugResult = {
+      match: {
+        ...match,
+        confidence,
+        imageUrl: realImageUrl || getPetImageById(match.id)
+      },
+      summary: `${match.summary} This is a randomized debug result for quickly testing sharing.`,
+      grounding: [],
+      traits: { energy: 0.5, sociability: 0.5, independence: 0.5, routine: 0.5, trainability: 0.5 },
+      shareCaptions: [
+        `My Purrish&Co. debug result says I'm a match for a ${match.name} 🐾 What pet matches you?`,
+        `Apparently, my personality matches a ${match.name}. Take the Purrish&Co. quiz and find yours!`,
+        `Would you get the same result? Discover your person-pet match with Purrish&Co. ✨`
+      ],
+      persistence: { enabled: false, saved: false }
+    };
+
+    setApiResult(debugResult);
+    setApiError("");
+    setSubmitted(true);
+  };
+
   return (
     <>
       <section className="page-header">
         <h1>🐾 Person-Pet Quiz</h1>
         <p>Discover which pet matches your personality through our fun AI-powered quiz.</p>
+        {import.meta.env.DEV && (
+          <button className="btn btn-outline debug-launch-button" type="button" onClick={showDebugResult}>
+            <i className="fas fa-flask" aria-hidden="true" /> Random Debug Result
+          </button>
+        )}
       </section>
 
       <section className="quiz-progress">
@@ -267,7 +306,7 @@ export default function QuizPage() {
       </section>
 
       <section className="quiz-container">
-        <div className="quiz-card">
+        <div className={`quiz-card ${submitted ? "quiz-card--result" : ""}`.trim()}>
           {adaptiveLoading ? (
             <div className="quiz-loading" role="status" aria-live="polite">
               <div className="quiz-loading-paw" aria-hidden="true">🐾</div>
@@ -291,10 +330,14 @@ export default function QuizPage() {
             <div className="quiz-result-panel">
               <h2>🐾 Your Result Is Ready</h2>
               <img src={displayResult.imageUrl} alt={displayResult.name || "Recommended pet"} className="quiz-result-image quiz-result-image--large" />
+              <p className="result-eyebrow">Your personality match</p>
               <h3>{displayResult.name}</h3>
-              <p>{displayResult.summary}</p>
-              <p className="quiz-hint">Confidence: {Math.round((displayResult.confidence || 0) * 100)}%</p>
-              <p className="quiz-hint">Top traits: {scoring.topTraits.map((item) => item.key).join(", ")}</p>
+              <p className="result-summary">{displayResult.summary}</p>
+              <div className="result-metrics">
+                <span><strong>{Math.round((displayResult.confidence || 0) * 100)}%</strong> confidence</span>
+                <span><strong>{scoring.topTraits.length}</strong> top traits</span>
+              </div>
+              <p className="quiz-hint result-traits">Top traits: {scoring.topTraits.map((item) => item.key).join(", ")}</p>
               {displayResult.grounding.length > 0 && <p className="quiz-hint">Grounded from: {displayResult.grounding[0].source}</p>}
               {apiError && <p className="quiz-error">{apiError}</p>}
               <div className="quiz-buttons">

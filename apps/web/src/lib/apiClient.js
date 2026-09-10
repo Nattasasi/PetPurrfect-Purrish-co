@@ -97,3 +97,15 @@ export async function generateStickerCaptions(breed, attributes) {
   return Array.isArray(response.captions) ? response.captions : [];
 }
 
+// Debug-only helper: fetches a real breed photo so the quiz debug result
+// doesn't have to rely on the static SVG placeholder.
+export async function getDebugBreedImage(breed, petType) {
+  try {
+    const params = new URLSearchParams({ breed, petType });
+    const body = await getJson(`/api/quiz/debug/breed-image?${params.toString()}`);
+    return body?.imageUrl || null;
+  } catch {
+    return null;
+  }
+}
+

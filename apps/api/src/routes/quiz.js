@@ -11,11 +11,23 @@ import {
   getShareAnalytics
 } from "../services/shareAnalyticsRepository.js";
 import { generateAdaptiveQuestions, getStaticQuestions } from "../services/quizQuestionService.js";
+import { fetchBreedImageUrl } from "../adapters/petImageApi.js";
 
 const router = Router();
 
 router.get("/questions/static", (_req, res) => {
   res.json({ questions: getStaticQuestions() });
+});
+
+// Used by the frontend's dev-only debug result generator to preview a real
+// breed photo instead of the static SVG fallback.
+router.get("/debug/breed-image", async (req, res) => {
+  try {
+    const imageUrl = await fetchBreedImageUrl(req.query.breed, req.query.petType);
+    res.json({ imageUrl: imageUrl || null });
+  } catch (error) {
+    res.status(500).json({ error: "breed_image_failed", message: error?.message || "Unexpected server error" });
+  }
 });
 
 router.post("/questions/adaptive", async (req, res) => {

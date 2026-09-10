@@ -1,14 +1,12 @@
 import * as tf from "@tensorflow/tfjs";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
-import * as mobilenet from "@tensorflow-models/mobilenet";
-import { matchBreed } from "./breedCatalog";
+import { classifyBreed } from "./breedClassifier";
 import { detectPetParts } from "./partDetection";
 
 const MIN_DETECTION_SCORE = 0.2;
 const BOX_PADDING_RATIO = 0.12;
 
 let cocoModelPromise = null;
-let mobilenetModelPromise = null;
 
 async function loadCocoModel() {
   if (!cocoModelPromise) {
@@ -16,14 +14,6 @@ async function loadCocoModel() {
   }
 
   return cocoModelPromise;
-}
-
-async function loadMobilenetModel() {
-  if (!mobilenetModelPromise) {
-    mobilenetModelPromise = mobilenet.load({ version: 2, alpha: 1.0 });
-  }
-
-  return mobilenetModelPromise;
 }
 
 function isPetLabel(label = "") {
@@ -143,7 +133,7 @@ export async function runPetInference(imageElement) {
 
   try {
     await tf.ready();
-    const [cocoModel, breedModel] = await Promise.all([loadCocoModel(), loadMobilenetModel()]);
+    const cocoModel = await loadCocoModel();
     const predictions = await cocoModel.detect(imageElement, 10, MIN_DETECTION_SCORE);
 
     const petCandidates = predictions
@@ -171,8 +161,7 @@ export async function runPetInference(imageElement) {
     // Classify the cropped pet region (rather than the whole photo) so the
     // breed model isn't distracted by background clutter.
     const croppedCanvas = cropToCanvas(imageElement, overallBox);
-    const breedPredictions = await breedModel.classify(croppedCanvas, 5);
-    const breedMatch = matchBreed(breedPredictions);
+    const breedMatch = await classifyBreed(croppedCanvas);
 
     const partResult = detectPetParts(croppedCanvas);
     const partBoxes = partResult.boxes.map((box) => ({
@@ -204,7 +193,7 @@ export async function runPetInference(imageElement) {
       confidence: bestMatch.score || 0.5,
       breed,
       breedConfidence: breedMatch?.confidence || 0,
-      breedAlternatives: breedPredictions,
+      breedAlternatives: breedMatch?.alternatives || [],
       bbox: overallBox,
       partBoxes,
       partDetectionMethod: partResult.method,

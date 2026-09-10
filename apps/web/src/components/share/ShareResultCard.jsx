@@ -16,11 +16,22 @@ function buildShareUrl(baseUrl, source) {
   }
 }
 
+// Native <select> options can't wrap, so long captions must be truncated for
+// display; the full text is still used as the selected/shared value.
+const CAPTION_DISPLAY_LIMIT = 70;
+function truncateCaption(caption) {
+  if (caption.length <= CAPTION_DISPLAY_LIMIT) {
+    return caption;
+  }
+  return `${caption.slice(0, CAPTION_DISPLAY_LIMIT - 1).trimEnd()}…`;
+}
+
 export default function ShareResultCard({
   title,
   subtitle,
   shareText,
   shareCaptions = [],
+  captionsLoading = false,
   onDownload,
   getShareFile,
   resultId = null,
@@ -28,7 +39,11 @@ export default function ShareResultCard({
 }) {
   const [copyState, setCopyState] = useState("Copy link");
   const [isOpen, setIsOpen] = useState(false);
-  const captions = shareCaptions.length > 0 ? shareCaptions : [shareText || subtitle || title];
+  const hasGeneratedCaptions = shareCaptions.length > 0;
+  const captions = hasGeneratedCaptions ? shareCaptions : [shareText || subtitle || title];
+  // While Ollama captions are still generating, hide the static fallback text
+  // so it can't be shared by mistake before the real caption arrives.
+  const showCaptionLoading = captionsLoading && !hasGeneratedCaptions;
   const [selectedCaptionIndex, setSelectedCaptionIndex] = useState(0);
   const selectedCaption = captions[selectedCaptionIndex] || captions[0];
   // Prefer the public result URL (sharePath) so new visitors actually see the
@@ -163,19 +178,26 @@ export default function ShareResultCard({
               <h3 id="share-result-title">{title}</h3>
               <p>{subtitle}</p>
             </div>
-            <label className="share-caption-picker">
-              <span>Choose your caption</span>
-              <select
-                value={selectedCaptionIndex}
-                onChange={(event) => setSelectedCaptionIndex(Number(event.target.value))}
-              >
-                {captions.map((caption, index) => (
-                  <option key={`${caption}-${index}`} value={index}>
-                    {caption}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {showCaptionLoading ? (
+              <div className="share-caption-loading" role="status" aria-live="polite">
+                <span className="share-caption-spinner" aria-hidden="true" />
+                <span>Generating your caption...</span>
+              </div>
+            ) : (
+              <label className="share-caption-picker">
+                <span>Choose your caption</span>
+                <select
+                  value={selectedCaptionIndex}
+                  onChange={(event) => setSelectedCaptionIndex(Number(event.target.value))}
+                >
+                  {captions.map((caption, index) => (
+                    <option key={`${caption}-${index}`} value={index} title={caption}>
+                      {truncateCaption(caption)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <div className="share-result-actions">
               {shareLinks.map((shareLink) => (
                 <button

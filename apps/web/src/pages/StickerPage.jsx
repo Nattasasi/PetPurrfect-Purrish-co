@@ -10,6 +10,13 @@ function capitalize(value) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 }
 
+const DEBUG_STICKERS = [
+  { breed: "Siberian Husky", furColor: "silver", faceShape: "long" },
+  { breed: "Golden Retriever", furColor: "golden", faceShape: "round" },
+  { breed: "Shiba Inu", furColor: "orange", faceShape: "pointed" },
+  { breed: "Ragdoll Cat", furColor: "cream", faceShape: "round" }
+];
+
 export default function StickerPage() {
   const inputRef = useRef(null);
   const stickerResultRef = useRef(null);
@@ -24,6 +31,7 @@ export default function StickerPage() {
   const [detectedAttributes, setDetectedAttributes] = useInMemoryPageState("sticker.detectedAttributes", {});
   const [composedStickerUrl, setComposedStickerUrl] = useInMemoryPageState("sticker.composedStickerUrl", "");
   const [shareCaptions, setShareCaptions] = useInMemoryPageState("sticker.shareCaptions", []);
+  const [captionsLoading, setCaptionsLoading] = useInMemoryPageState("sticker.captionsLoading", false);
 
   useEffect(() => {
     if (isGenerated) {
@@ -50,6 +58,7 @@ export default function StickerPage() {
     setDetectedAttributes({});
     setComposedStickerUrl("");
     setShareCaptions([]);
+    setCaptionsLoading(false);
   };
 
   const handleGenerateSticker = async () => {
@@ -84,6 +93,8 @@ export default function StickerPage() {
 
       // Caption generation is non-blocking: the sticker is usable immediately,
       // and the local captions remain available if Ollama cannot be reached.
+      setShareCaptions([]);
+      setCaptionsLoading(true);
       try {
         const captions = await generateStickerCaptions(inference.breed, inference.attributes);
         if (captions.length > 0) {
@@ -91,6 +102,8 @@ export default function StickerPage() {
         }
       } catch {
         // ShareResultCard uses its supplied static caption when Ollama is unavailable.
+      } finally {
+        setCaptionsLoading(false);
       }
     };
 
@@ -101,6 +114,46 @@ export default function StickerPage() {
     };
 
     img.src = imageUrl;
+  };
+
+  const showDebugSticker = async () => {
+    const debugSticker = DEBUG_STICKERS[Math.floor(Math.random() * DEBUG_STICKERS.length)];
+    const attributes = {
+      furColor: debugSticker.furColor,
+      faceShape: debugSticker.faceShape,
+      earStyle: "pointed",
+      petType: debugSticker.breed.toLowerCase().includes("cat") ? "cat" : "dog"
+    };
+    const composedImage = composeStickerImage(debugSticker.breed, attributes);
+    const debugInference = {
+      validPet: true,
+      breed: debugSticker.breed,
+      confidence: Number((0.82 + Math.random() * 0.17).toFixed(3)),
+      breedConfidence: Number((0.7 + Math.random() * 0.29).toFixed(3)),
+      attributes,
+      bodyPartBoxes: {},
+      reason: "Debug result"
+    };
+
+    setFileName("debug-pet.png");
+    setImageUrl(composedImage);
+    setAnalysisResult(debugInference);
+    setDetectedAttributes(attributes);
+    setComposedStickerUrl(composedImage);
+    setDebugImageUrl("");
+    setAnalysisError("");
+    setIsGenerated(true);
+
+    setShareCaptions([]);
+    setCaptionsLoading(true);
+    try {
+      const captions = await generateStickerCaptions(debugSticker.breed, attributes);
+      setShareCaptions(captions);
+    } catch {
+      setShareCaptions([]);
+    } finally {
+      setCaptionsLoading(false);
+    }
   };
 
   const resetUpload = () => {
@@ -117,6 +170,7 @@ export default function StickerPage() {
     setDetectedAttributes({});
     setComposedStickerUrl("");
     setShareCaptions([]);
+    setCaptionsLoading(false);
 
     if (inputRef.current) {
       inputRef.current.value = "";
@@ -216,6 +270,11 @@ export default function StickerPage() {
             >
               {isAnalyzing ? "Analyzing..." : "Generate Sticker"}
             </button>
+            {import.meta.env.DEV && (
+              <button type="button" className="btn btn-outline debug-launch-button" onClick={showDebugSticker}>
+                <i className="fas fa-flask" aria-hidden="true" /> Random Debug Sticker
+              </button>
+            )}
           </div>
 
           {analysisError && <p className="analysis-error">{analysisError}</p>}
@@ -265,6 +324,7 @@ export default function StickerPage() {
                 subtitle={petDescriptor}
                 shareText={stickerShareCaption}
                 shareCaptions={shareCaptions}
+                captionsLoading={captionsLoading}
                 onDownload={handleDownload}
                 getShareFile={getShareFile}
               />

@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { exportQuizResultImage, createQuizResultImageFile } from "../lib/shareImage";
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { exportQuizResultImage } from "../lib/shareImage";
 import { resolvePetImageUrl } from "../lib/petImages";
-import { getPublicQuizResult, trackLandingEvent } from "../lib/apiClient";
-import ShareResultCard from "../components/share/ShareResultCard";
 
 const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const QUIZ_STORAGE_VERSION_KEY = "purrishco.quiz.storage.version";
@@ -42,87 +40,19 @@ function readStoredResult() {
   }
 }
 
-// Normalizes the sanitized public API result into the shape this page renders.
-function publicResultToViewModel(publicResult) {
-  return {
-    match: {
-      id: publicResult.matchId,
-      name: publicResult.matchName || "Pet Match",
-      confidence: publicResult.confidence ?? 0,
-      imageUrl: null
-    },
-    topTraits: publicResult.topTraits || [],
-    shareCaptions: publicResult.shareCaptions || [],
-    summary:
-      "A Purrish&Co. user took the person-pet personality quiz and got this match. Take the quiz yourself to find the pet that fits your lifestyle!",
-    traits: publicResult.traits || {},
-    sharedView: true
-  };
-}
-
 export default function QuizResultPage() {
   const navigate = useNavigate();
-  const { id: sharedResultId } = useParams();
-  const [searchParams] = useSearchParams();
-  const [sharedResult, setSharedResult] = useState(null);
-  const [sharedLoadState, setSharedLoadState] = useState("idle");
-  const landingTrackedRef = useRef(false);
 
-  const localResult = useMemo(() => readStoredResult(), []);
-  const isSharedView = Boolean(sharedResultId);
-  const result = isSharedView ? sharedResult : localResult;
-
-  // Load the public result when arriving via a shared link.
-  useEffect(() => {
-    if (!sharedResultId) {
-      return;
-    }
-    setSharedLoadState("loading");
-    getPublicQuizResult(sharedResultId).then((publicResult) => {
-      setSharedResult(publicResult ? publicResultToViewModel(publicResult) : null);
-      setSharedLoadState(publicResult ? "ready" : "missing");
-    });
-  }, [sharedResultId]);
-
-  // Record the landing once for UTM attribution (viral funnel measurement).
-  useEffect(() => {
-    if (landingTrackedRef.current) {
-      return;
-    }
-    const utmSource = searchParams.get("utm_source");
-    if (!utmSource) {
-      return;
-    }
-    landingTrackedRef.current = true;
-    trackLandingEvent({
-      resultId: sharedResultId || null,
-      utmSource,
-      utmMedium: searchParams.get("utm_medium"),
-      utmCampaign: searchParams.get("utm_campaign")
-    });
-  }, [searchParams, sharedResultId]);
-
-  if (isSharedView && sharedLoadState === "loading") {
-    return (
-      <section className="page-header">
-        <h1>Quiz Result</h1>
-        <p>Loading shared result…</p>
-      </section>
-    );
-  }
+  const result = useMemo(() => readStoredResult(), []);
 
   if (!result) {
     return (
       <section className="page-header">
         <h1>Quiz Result</h1>
-        <p>
-          {isSharedView
-            ? "This shared result isn't available anymore — but you can find your own perfect pet match!"
-            : "No result found yet. Please complete the quiz first."}
-        </p>
+        <p>No result found yet. Please complete the quiz first.</p>
         <div className="hero-buttons" style={{ justifyContent: "center" }}>
           <button className="btn btn-primary" type="button" onClick={() => navigate("/quiz")}>
-            Take the Quiz
+            Go to Quiz
           </button>
         </div>
       </section>
@@ -136,27 +66,11 @@ export default function QuizResultPage() {
     .join(", ");
 
   const imageUrl = resolvePetImageUrl(result.imageUrl || result.match?.imageUrl, result.match?.id);
-  // The sharer's persisted id drives the public share URL; a visitor re-sharing
-  // keeps pointing at the same public result.
-  const resultId = result.persistence?.id || (isSharedView ? sharedResultId : null);
-  const sharePath = resultId ? `/quiz/result/${resultId}` : null;
 
   return (
     <>
-      {isSharedView && (
-        <section className="referral-banner">
-          <p>
-            🎉 A friend got matched with a <strong>{result.match?.name}</strong> on Purrish&Co.!
-            Curious which pet fits <em>your</em> personality?
-          </p>
-          <button className="btn btn-primary" type="button" onClick={() => navigate("/quiz")}>
-            Take the Free Quiz →
-          </button>
-        </section>
-      )}
-
       <section className="page-header">
-        <h1>🐾 {isSharedView ? "Shared Quiz Result" : "Your Quiz Result"}</h1>
+        <h1>🐾 Your Quiz Result</h1>
         <p>Here is your AI-grounded personality match.</p>
       </section>
 
@@ -186,19 +100,9 @@ export default function QuizResultPage() {
               Download Result PNG
             </button>
             <button className="btn btn-outline" type="button" onClick={() => navigate("/quiz")}>
-              {isSharedView ? "Take the Quiz Yourself" : "Retake Quiz"}
+              Retake Quiz
             </button>
           </div>
-          <ShareResultCard
-            title={isSharedView ? "Share this result" : "Share your quiz result"}
-            subtitle={`${result.match?.name || "Your Pet Match"} · ${confidence}% confidence`}
-            shareText={`🐾 The Purrish&Co. quiz says I'm a match for a ${result.match?.name || "perfect pet companion"}! ${confidence}% confidence. Curious what pet fits YOU? Take the quiz! ✨`}
-            shareCaptions={result.shareCaptions}
-            onDownload={() => exportQuizResultImage(result)}
-            getShareFile={() => createQuizResultImageFile(result)}
-            resultId={resultId}
-            sharePath={sharePath}
-          />
         </div>
       </section>
 
