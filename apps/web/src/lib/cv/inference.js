@@ -178,6 +178,7 @@ export async function runPetInference(imageElement) {
 
     const computedAttributes = {
       furColor: fallback.furColor,
+      petBox: overallBox,
       earStyle,
       faceShape,
       petType,

@@ -77,6 +77,6 @@ export function selectStickerAsset(breed, attributes = {}) {
 }
 
 export function composeStickerImage(breed, attributes = {}) {
-  const asset = selectStickerAsset(breed, attributes);
-  return `${ASSET_BASE}${asset.fileName}`;
+  const assetUrl = `${ASSET_BASE}${selectStickerAsset(breed, attributes).fileName}`;
+  return assetUrl;
 }
