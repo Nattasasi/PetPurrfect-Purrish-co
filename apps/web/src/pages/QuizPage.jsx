@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import staticQuizQuestions from "../data/quizQuestions.json";
 import { scoreQuiz } from "../lib/quizScoring";
-import { postJson, createSessionId, getDebugBreedImage } from "../lib/apiClient";
+import { postJson, createSessionId, getDebugBreedImage, saveDebugQuizResult } from "../lib/apiClient";
 import { getPetImageById, resolvePetImageUrl } from "../lib/petImages";
 import { exportQuizResultImage, createQuizResultImageFile } from "../lib/shareImage";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
@@ -9,7 +9,7 @@ import ShareResultCard from "../components/share/ShareResultCard";
 
 const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const STATIC_QUESTION_COUNT = 5;
-const ADAPTIVE_QUESTION_COUNT = 15;
+const ADAPTIVE_QUESTION_COUNT = 5;
 const TOTAL_QUESTION_COUNT = STATIC_QUESTION_COUNT + ADAPTIVE_QUESTION_COUNT;
 const DEBUG_MATCHES = [
   { id: "golden_retriever", name: "Golden Retriever", petType: "dog", summary: "Friendly, social, and well-suited to active owners." },
@@ -264,21 +264,39 @@ export default function QuizPage() {
     const match = DEBUG_MATCHES[Math.floor(Math.random() * DEBUG_MATCHES.length)];
     const confidence = Number((0.72 + Math.random() * 0.27).toFixed(3));
     const realImageUrl = await getDebugBreedImage(match.name, match.petType);
+    const traits = { energy: 0.5, sociability: 0.5, independence: 0.5, routine: 0.5, trainability: 0.5 };
+    const shareCaptions = [
+      `My Purrish&Co. debug result says I'm a match for a ${match.name} 🐾 What pet matches you?`,
+      `Apparently, my personality matches a ${match.name}. Take the Purrish&Co. quiz and find yours!`,
+      `Would you get the same result? Discover your person-pet match with Purrish&Co. ✨`
+    ];
+    const matchWithImage = {
+      ...match,
+      confidence,
+      imageUrl: realImageUrl || getPetImageById(match.id)
+    };
+
+    let persistence = { enabled: false, saved: false };
+    try {
+      const saveResponse = await saveDebugQuizResult({
+        sessionId,
+        match: matchWithImage,
+        traits,
+        topTraits: [],
+        shareCaptions
+      });
+      persistence = saveResponse?.persistence || persistence;
+    } catch {
+      persistence = { enabled: true, saved: false, error: "debug_result_save_failed" };
+    }
+
     const debugResult = {
-      match: {
-        ...match,
-        confidence,
-        imageUrl: realImageUrl || getPetImageById(match.id)
-      },
+      match: matchWithImage,
       summary: `${match.summary} This is a randomized debug result for quickly testing sharing.`,
       grounding: [],
-      traits: { energy: 0.5, sociability: 0.5, independence: 0.5, routine: 0.5, trainability: 0.5 },
-      shareCaptions: [
-        `My Purrish&Co. debug result says I'm a match for a ${match.name} 🐾 What pet matches you?`,
-        `Apparently, my personality matches a ${match.name}. Take the Purrish&Co. quiz and find yours!`,
-        `Would you get the same result? Discover your person-pet match with Purrish&Co. ✨`
-      ],
-      persistence: { enabled: false, saved: false }
+      traits,
+      shareCaptions,
+      persistence
     };
 
     setApiResult(debugResult);

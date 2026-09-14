@@ -109,3 +109,10 @@ export async function getDebugBreedImage(breed, petType) {
   }
 }
 
+// Debug-only helper: persists the randomized debug result through the same
+// backend save path a real quiz submission uses, instead of only rendering
+// a client-side object.
+export async function saveDebugQuizResult(payload) {
+  return postJson("/api/quiz/debug/save-result", payload);
+}
+

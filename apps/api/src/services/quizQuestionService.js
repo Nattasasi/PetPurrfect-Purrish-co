@@ -11,7 +11,7 @@ const ALL_QUESTIONS = JSON.parse(
 const TRAIT_KEYS = ["energy", "sociability", "independence", "routine", "trainability"];
 const OLLAMA_TIMEOUT_MS = 60000;
 const STATIC_QUESTION_COUNT = 5;
-const ADAPTIVE_QUESTION_COUNT = 15;
+const ADAPTIVE_QUESTION_COUNT = 5;
 const STATIC_QUESTIONS = ALL_QUESTIONS.slice(0, STATIC_QUESTION_COUNT);
 
 function describeStaticAnswers(staticAnswers = []) {

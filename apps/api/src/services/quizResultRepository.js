@@ -1,14 +1,13 @@
-import { getMongoDb } from "../config/mongo.js";
+import { getFirestoreDb } from "../config/firebaseAdmin.js";
+import { env } from "../config/env.js";
 
 export async function saveQuizResult(payload) {
-  const db = await getMongoDb();
-
-  if (!db) {
+  if (env.dataStore !== "firebase") {
     return { enabled: false, saved: false };
   }
 
-  const collectionName =
-    process.env.MONGODB_QUIZ_RESULTS_COLLECTION || "quiz_results";
+  const db = getFirestoreDb();
+  if (!db) return { enabled: false, saved: false };
 
   const doc = {
     sessionId: payload.sessionId || null,
@@ -25,10 +24,6 @@ export async function saveQuizResult(payload) {
     createdAt: new Date()
   };
 
-  const result = await db.collection(collectionName).insertOne(doc);
-  return {
-    enabled: true,
-    saved: true,
-    id: result.insertedId.toString()
-  };
+  const result = await db.collection(env.firebase.quizResultsCollection).add(doc);
+  return { enabled: true, saved: true, id: result.id, store: "firebase" };
 }

@@ -12,6 +12,7 @@ import {
 } from "../services/shareAnalyticsRepository.js";
 import { generateAdaptiveQuestions, getStaticQuestions } from "../services/quizQuestionService.js";
 import { fetchBreedImageUrl } from "../adapters/petImageApi.js";
+import { saveQuizResult } from "../services/quizResultRepository.js";
 
 const router = Router();
 
@@ -30,6 +31,32 @@ router.get("/debug/breed-image", async (req, res) => {
   }
 });
 
+// Dev-only debug result generator: persists the randomized debug match the
+// same way a real quiz submission would, instead of bypassing the backend.
+router.post("/debug/save-result", async (req, res) => {
+  try {
+    const body = req.body || {};
+    const match = body.match || {};
+    const persistence = await saveQuizResult({
+      sessionId: typeof body.sessionId === "string" ? body.sessionId : null,
+      matchId: match.id || null,
+      matchName: match.name || null,
+      confidence: typeof match.confidence === "number" ? match.confidence : null,
+      imageUrl: match.imageUrl || null,
+      source: "debug",
+      traits: body.traits || {},
+      topTraits: Array.isArray(body.topTraits) ? body.topTraits : [],
+      answers: [],
+      shareCaptions: Array.isArray(body.shareCaptions) ? body.shareCaptions : [],
+      shareCaptionModel: null,
+      generatedAt: new Date().toISOString()
+    });
+    res.json({ persistence });
+  } catch (error) {
+    res.status(500).json({ error: "debug_result_save_failed", message: error?.message || "Unexpected server error" });
+  }
+});
+
 router.post("/questions/adaptive", async (req, res) => {
   try {
     const sessionId = typeof req.body.sessionId === "string" ? req.body.sessionId : null;
@@ -37,7 +64,7 @@ router.post("/questions/adaptive", async (req, res) => {
       const previousQuestionTexts = Array.isArray(req.body.previousQuestionTexts)
       ? req.body.previousQuestionTexts
       : [];
-      const questionCount = Number(req.body.questionCount) === 1 ? 1 : 15;
+      const questionCount = Number(req.body.questionCount) === 1 ? 1 : 5;
       const questionOffset = Number.isInteger(req.body.questionOffset) ? req.body.questionOffset : 0;
     const previousResult = await getLatestQuizResultForSession(sessionId);
       const result = await generateAdaptiveQuestions(

@@ -30,7 +30,7 @@ export default function ShareAnalyticsPage() {
         {analytics && !analytics.enabled && (
           <div className="info-card">
             <h2>Persistence disabled</h2>
-            <p>Connect MongoDB to start collecting share and landing events.</p>
+            <p>Configure Firebase storage to start collecting share and landing events.</p>
           </div>
         )}
 

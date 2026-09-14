@@ -1,66 +1,71 @@
-import { ObjectId } from "mongodb";
-import { getMongoDb } from "../config/mongo.js";
+import { getFirestoreDb } from "../config/firebaseAdmin.js";
+import { env } from "../config/env.js";
+
+function normalizeCreatedAtToMillis(value) {
+  if (!value) return 0;
+  if (typeof value?.toDate === "function") return value.toDate().getTime();
+  if (typeof value?._seconds === "number") {
+    const nanos = typeof value?._nanoseconds === "number" ? value._nanoseconds : 0;
+    return value._seconds * 1000 + Math.floor(nanos / 1_000_000);
+  }
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 export async function listRecentQuizResults(limit = 10) {
-  const db = await getMongoDb();
-
-  if (!db) {
+  if (env.dataStore !== "firebase") {
     return { enabled: false, results: [] };
   }
 
-  const collectionName =
-    process.env.MONGODB_QUIZ_RESULTS_COLLECTION || "quiz_results";
+  const db = getFirestoreDb();
+  if (!db) return { enabled: false, results: [] };
 
-  const results = await db
-    .collection(collectionName)
-    .find({})
-    .sort({ createdAt: -1 })
-    .limit(Math.max(1, Math.min(Number(limit) || 10, 50)))
-    .toArray();
+  const boundedLimit = Math.max(1, Math.min(Number(limit) || 10, 50));
+  const snapshot = await db
+    .collection(env.firebase.quizResultsCollection)
+    .orderBy("createdAt", "desc")
+    .limit(boundedLimit)
+    .get();
 
   return {
     enabled: true,
-    results: results.map((doc) => ({
-      id: doc._id.toString(),
-      sessionId: doc.sessionId || null,
-      matchId: doc.matchId || null,
-      matchName: doc.matchName || null,
-      confidence: doc.confidence ?? null,
-      source: doc.source || "api",
-      createdAt: doc.createdAt || null,
-      topTraits: doc.topTraits || [],
-      traits: doc.traits || {}
-    }))
+    results: snapshot.docs.map((item) => {
+      const doc = item.data();
+      return {
+        id: item.id,
+        sessionId: doc.sessionId || null,
+        matchId: doc.matchId || null,
+        matchName: doc.matchName || null,
+        confidence: doc.confidence ?? null,
+        source: doc.source || "api",
+        createdAt: doc.createdAt || null,
+        topTraits: doc.topTraits || [],
+        traits: doc.traits || {}
+      };
+    })
   };
 }
 
 // Public, sanitized view of a quiz result for shared links. Deliberately omits
 // sessionId and raw answers so a shared URL never leaks the sharer's data.
 export async function getPublicQuizResult(id) {
-  if (!id || !ObjectId.isValid(id)) {
+  if (!id || env.dataStore !== "firebase") {
     return null;
   }
 
   try {
-    const db = await getMongoDb();
+    const db = getFirestoreDb();
+    if (!db) return null;
 
-    if (!db) {
-      return null;
-    }
+    const snapshot = await db
+      .collection(env.firebase.quizResultsCollection)
+      .doc(id)
+      .get();
+    if (!snapshot.exists) return null;
 
-    const collectionName =
-      process.env.MONGODB_QUIZ_RESULTS_COLLECTION || "quiz_results";
-
-    const doc = await db
-      .collection(collectionName)
-      .findOne({ _id: new ObjectId(id) });
-
-    if (!doc) {
-      return null;
-    }
-
+    const doc = snapshot.data();
     return {
-      id: doc._id.toString(),
+      id: snapshot.id,
       matchId: doc.matchId || null,
       matchName: doc.matchName || null,
       confidence: doc.confidence ?? null,
@@ -77,33 +82,43 @@ export async function getPublicQuizResult(id) {
 }
 
 export async function getLatestQuizResultForSession(sessionId) {
-  if (!sessionId) {
+  if (!sessionId || env.dataStore !== "firebase") {
     return null;
   }
 
   try {
-    const db = await getMongoDb();
+    const db = getFirestoreDb();
+    if (!db) return null;
 
-    if (!db) {
-      return null;
+    let item = null;
+    try {
+      const snapshot = await db
+        .collection(env.firebase.quizResultsCollection)
+        .where("sessionId", "==", sessionId)
+        .orderBy("createdAt", "desc")
+        .limit(1)
+        .get();
+      item = snapshot.docs[0] || null;
+    } catch (error) {
+      if (!String(error?.message || "").includes("requires an index")) {
+        throw error;
+      }
+
+      // Fallback when composite index is not provisioned yet.
+      const fallback = await db
+        .collection(env.firebase.quizResultsCollection)
+        .where("sessionId", "==", sessionId)
+        .limit(25)
+        .get();
+      item = fallback.docs
+        .sort((a, b) => normalizeCreatedAtToMillis(b.data()?.createdAt) - normalizeCreatedAtToMillis(a.data()?.createdAt))[0] || null;
     }
 
-    const collectionName =
-      process.env.MONGODB_QUIZ_RESULTS_COLLECTION || "quiz_results";
+    if (!item) return null;
 
-    const doc = await db
-      .collection(collectionName)
-      .find({ sessionId })
-      .sort({ createdAt: -1 })
-      .limit(1)
-      .next();
-
-    if (!doc) {
-      return null;
-    }
-
+    const doc = item.data();
     return {
-      id: doc._id.toString(),
+      id: item.id,
       sessionId: doc.sessionId || null,
       matchId: doc.matchId || null,
       matchName: doc.matchName || null,
