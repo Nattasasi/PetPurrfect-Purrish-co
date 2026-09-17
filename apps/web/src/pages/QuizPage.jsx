@@ -373,6 +373,8 @@ export default function QuizPage() {
                 subtitle={`${displayResult.name} · ${Math.round((displayResult.confidence || 0) * 100)}% confidence`}
                 shareText={`🐾 The Purrish&Co. quiz says I'm a match for a ${displayResult.name}! ${Math.round((displayResult.confidence || 0) * 100)}% confidence. Curious what pet fits YOU? Take the quiz! ✨`}
                 shareCaptions={displayResult.shareCaptions}
+                crossPromoText="Want to turn this personality into a personalized pet sticker?"
+                crossPromoPath="/pet"
                 onDownload={() => exportQuizResultImage({
                   match: { name: displayResult.name, confidence: displayResult.confidence },
                   summary: displayResult.summary,
@@ -431,13 +433,6 @@ export default function QuizPage() {
           <div className="card"><i className="fas fa-user" /><h3>Answer Questions</h3><p>Complete a short personality quiz.</p></div>
           <div className="card"><i className="fas fa-brain" /><h3>AI Analysis</h3><p>Our AI analyzes your personality traits.</p></div>
           <div className="card"><i className="fas fa-dog" /><h3>Pet Recommendation</h3><p>Receive the pet breed that suits you best.</p></div>
-        </div>
-      </section>
-
-      <section className="info-section">
-        <div className="info-card">
-          <h2>Why Take the Quiz?</h2>
-          <ul><li>Fun personality experience</li><li>AI-powered recommendation</li><li>Share your results with friends</li><li>Discover your ideal pet companion</li></ul>
         </div>
       </section>
     </>

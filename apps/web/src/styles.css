@@ -971,6 +971,27 @@ section h2{
     to{ transform:rotate(360deg); }
 }
 
+.share-cross-promo{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    margin:16px auto 0;
+    max-width:460px;
+    width:100%;
+    padding:12px 14px;
+    border:1px dashed #eccbd8;
+    border-radius:10px;
+    background:#fff8fb;
+    text-align:center;
+}
+
+.share-cross-promo p{
+    margin:0;
+    font-size:.9rem;
+    color:#8a4b66;
+}
+
 .quiz-card{
     max-width:800px;
     margin:auto;
@@ -1451,12 +1472,6 @@ footer p{
     margin-bottom:20px;
 }
 
-.socials{
-    display:flex;
-    justify-content:center;
-    gap:25px;
-    margin:25px 0;
-}
 
 .socials i{
     width:45px;

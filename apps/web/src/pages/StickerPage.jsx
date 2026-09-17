@@ -341,6 +341,8 @@ export default function StickerPage() {
                 captionsLoading={captionsLoading}
                 onDownload={handleDownload}
                 getShareFile={getShareFile}
+                crossPromoText="Want to discover your pet personality and unlock a themed version?"
+                crossPromoPath="/quiz"
               />
             </div>
           ) : (
@@ -412,18 +414,6 @@ export default function StickerPage() {
           </div>
         </section>
       )}
-
-      <section className="info-section">
-        <div className="info-card">
-          <h2>✨ Why Use This Feature?</h2>
-          <ul>
-            <li>Identify your pet breed automatically</li>
-            <li>Box each important pet body part</li>
-            <li>Create a personalized cartoon sticker</li>
-            <li>Receive a free sticker with every order</li>
-          </ul>
-        </div>
-      </section>
     </>
   );
 }

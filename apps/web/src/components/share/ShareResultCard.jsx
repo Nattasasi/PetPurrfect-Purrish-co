@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { trackShareEvent } from "../../lib/apiClient";
 
 // Builds a share URL with UTM attribution so we can measure which platform
@@ -16,16 +17,6 @@ function buildShareUrl(baseUrl, source) {
   }
 }
 
-// Native <select> options can't wrap, so long captions must be truncated for
-// display; the full text is still used as the selected/shared value.
-const CAPTION_DISPLAY_LIMIT = 70;
-function truncateCaption(caption) {
-  if (caption.length <= CAPTION_DISPLAY_LIMIT) {
-    return caption;
-  }
-  return `${caption.slice(0, CAPTION_DISPLAY_LIMIT - 1).trimEnd()}…`;
-}
-
 export default function ShareResultCard({
   title,
   subtitle,
@@ -35,7 +26,9 @@ export default function ShareResultCard({
   onDownload,
   getShareFile,
   resultId = null,
-  sharePath = null
+  sharePath = null,
+  crossPromoText = null,
+  crossPromoPath = null
 }) {
   const [copyState, setCopyState] = useState("Copy link");
   const [isOpen, setIsOpen] = useState(false);
@@ -44,7 +37,11 @@ export default function ShareResultCard({
   // While Ollama captions are still generating, hide the static fallback text
   // so it can't be shared by mistake before the real caption arrives.
   const showCaptionLoading = captionsLoading && !hasGeneratedCaptions;
+  // Auto-pick a random caption instead of asking the user to choose one.
   const [selectedCaptionIndex, setSelectedCaptionIndex] = useState(0);
+  useEffect(() => {
+    setSelectedCaptionIndex(Math.floor(Math.random() * captions.length));
+  }, [shareCaptions]);
   const selectedCaption = captions[selectedCaptionIndex] || captions[0];
   // Prefer the public result URL (sharePath) so new visitors actually see the
   // result; fall back to the current page when persistence is unavailable.
@@ -54,12 +51,19 @@ export default function ShareResultCard({
 
   const platformUrl = (source) => buildShareUrl(baseShareUrl, source);
 
-  // Keep links outside the model output so they are always valid, attributed,
-  // and separated from the caption by a blank line on every platform.
-  const shareCaption = (source) => {
-    const quizUrl = buildShareUrl("/quiz", source);
-    const stickerUrl = buildShareUrl("/pet", source);
-    return `${selectedCaption}\n\nFind your pet match: ${quizUrl}\nCreate your own pet sticker: ${stickerUrl}`;
+  // Each post links to only this result (one URL, not the quiz and sticker
+  // both) with a short cross-feature prompt; the link itself carries the
+  // preview card, so it's only appended as text where a platform has no
+  // separate URL field (Instagram copy) to avoid burning the caption limit.
+  const shareCaption = (source, { includeUrl = false } = {}) => {
+    const lines = [selectedCaption];
+    if (crossPromoText) {
+      lines.push(crossPromoText);
+    }
+    if (includeUrl) {
+      lines.push(platformUrl(source));
+    }
+    return lines.join("\n\n");
   };
 
   // Web intents must open synchronously inside the click handler: awaiting first
@@ -115,7 +119,7 @@ export default function ShareResultCard({
         return false;
       }
 
-      await navigator.share({ files: [file], title, text: shareCaption("native") });
+      await navigator.share({ files: [file], title, text: shareCaption("native"), url: platformUrl("native") });
       trackShareEvent(resultId, "native");
       return true;
     } catch (error) {
@@ -126,7 +130,7 @@ export default function ShareResultCard({
   const handlePlatformShare = (shareLink) => {
     if (shareLink.copyCaption) {
       navigator.clipboard
-        .writeText(shareCaption(shareLink.platform))
+        .writeText(shareCaption(shareLink.platform, { includeUrl: true }))
         .catch(() => {
           // Ignore clipboard restrictions; the platform tab still opens.
         });
@@ -178,25 +182,19 @@ export default function ShareResultCard({
               <h3 id="share-result-title">{title}</h3>
               <p>{subtitle}</p>
             </div>
-            {showCaptionLoading ? (
+            {showCaptionLoading && (
               <div className="share-caption-loading" role="status" aria-live="polite">
                 <span className="share-caption-spinner" aria-hidden="true" />
                 <span>Generating your caption...</span>
               </div>
-            ) : (
-              <label className="share-caption-picker">
-                <span>Choose your caption</span>
-                <select
-                  value={selectedCaptionIndex}
-                  onChange={(event) => setSelectedCaptionIndex(Number(event.target.value))}
-                >
-                  {captions.map((caption, index) => (
-                    <option key={`${caption}-${index}`} value={index} title={caption}>
-                      {truncateCaption(caption)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            )}
+            {crossPromoText && crossPromoPath && (
+              <div className="share-cross-promo">
+                <p>{crossPromoText}</p>
+                <Link to={crossPromoPath} className="share-text-button" onClick={() => setIsOpen(false)}>
+                  Try it now <i className="fas fa-arrow-right" aria-hidden="true" />
+                </Link>
+              </div>
             )}
             <div className="share-result-actions">
               {shareLinks.map((shareLink) => (

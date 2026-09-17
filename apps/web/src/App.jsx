@@ -4,7 +4,6 @@ import HomePage from "./pages/HomePage";
 import QuizPage from "./pages/QuizPage";
 import QuizResultPage from "./pages/QuizResultPage";
 import StickerPage from "./pages/StickerPage";
-import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import ShareAnalyticsPage from "./pages/ShareAnalyticsPage";
 
@@ -102,11 +101,6 @@ export default function App() {
               </NavLink>
             </li>
             <li>
-              <NavLink to="/about" className={({ isActive }) => (isActive ? "active" : undefined)}>
-                About
-              </NavLink>
-            </li>
-            <li>
               <NavLink
                 to="/contact"
                 className={({ isActive }) => (isActive ? "active" : undefined)}
@@ -129,7 +123,6 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/quiz/result" element={<QuizResultPage />} />
           <Route path="/quiz/result/:id" element={<QuizResultPage />} />
-          <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/admin/share" element={<ShareAnalyticsPage />} />
         </Routes>
@@ -138,12 +131,6 @@ export default function App() {
       <footer>
         <h2>🐾 Purrish&Co.</h2>
         <p>"We are also your pets' best friend."</p>
-        <div className="socials">
-          <i className="fab fa-facebook" />
-          <i className="fab fa-instagram" />
-          <i className="fab fa-tiktok" />
-          <i className="fas fa-envelope" />
-        </div>
         <p>© 2026 Purrish&Co. All Rights Reserved.</p>
       </footer>
     </>
