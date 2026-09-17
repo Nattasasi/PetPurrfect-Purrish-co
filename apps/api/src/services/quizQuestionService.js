@@ -137,7 +137,23 @@ export async function generateAdaptiveQuestions(
   questionOffset = 0
 ) {
   const prompt = buildPrompt(staticAnswers, previousResult, previousQuestionTexts, questionCount);
-  const raw = await callOllama(prompt);
-  const questions = validateQuestions(extractQuestionArray(JSON.parse(raw)), questionCount, questionOffset);
-  return { source: "ollama", model: env.ollama.model, questions };
+
+  // Each adaptive question is one independent Ollama call with strict output
+  // validation (exact option count, no duplicates, no banned words). Across
+  // the ~15 sequential calls in a full quiz, a single transient miss (a
+  // malformed JSON response, a slow generation, one extra/missing option)
+  // used to abort the whole quiz. Retry a few times before giving up so
+  // one bad sample doesn't block the user.
+  const maxAttempts = 3;
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const raw = await callOllama(prompt);
+      const questions = validateQuestions(extractQuestionArray(JSON.parse(raw)), questionCount, questionOffset);
+      return { source: "ollama", model: env.ollama.model, questions };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
 }

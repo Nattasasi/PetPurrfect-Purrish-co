@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import staticQuizQuestions from "../data/quizQuestions.json";
 import { scoreQuiz } from "../lib/quizScoring";
-import { postJson, createSessionId, getDebugBreedImage, saveDebugQuizResult } from "../lib/apiClient";
+import { postJson, createSessionId } from "../lib/apiClient";
 import { getPetImageById, resolvePetImageUrl } from "../lib/petImages";
 import { exportQuizResultImage, createQuizResultImageFile } from "../lib/shareImage";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
+import { buildPersonalitySummary, matchStrengthLabel } from "../lib/personalityInsights";
 import ShareResultCard from "../components/share/ShareResultCard";
 
 const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
@@ -13,8 +14,14 @@ const ADAPTIVE_QUESTION_COUNT = 5;
 const TOTAL_QUESTION_COUNT = STATIC_QUESTION_COUNT + ADAPTIVE_QUESTION_COUNT;
 const DEBUG_MATCHES = [
   { id: "golden_retriever", name: "Golden Retriever", petType: "dog", summary: "Friendly, social, and well-suited to active owners." },
+  { id: "labrador_retriever", name: "Labrador Retriever", petType: "dog", summary: "Warm, upbeat, and happiest when life is active and social." },
+  { id: "corgi", name: "Corgi", petType: "dog", summary: "Cheerful, people-loving, and better with structure than chaos." },
+  { id: "poodle", name: "Poodle", petType: "dog", summary: "Smart, adaptable, and quick to pick up on your rhythms." },
   { id: "shiba_inu", name: "Shiba Inu", petType: "dog", summary: "Independent, alert, and confident with a balanced routine." },
+  { id: "husky", name: "Husky", petType: "dog", summary: "Energetic, bold, and happiest when life has room to roam." },
   { id: "ragdoll_cat", name: "Ragdoll Cat", petType: "cat", summary: "Calm, affectionate, and ideal for relaxed households." },
+  { id: "siamese_cat", name: "Siamese Cat", petType: "cat", summary: "Expressive, social, and always ready to be part of the moment." },
+  { id: "persian_cat", name: "Persian Cat", petType: "cat", summary: "Soft-spoken, low-key, and happiest in a calm, comfy setting." },
   { id: "border_collie", name: "Border Collie", petType: "dog", summary: "Highly trainable and built for active, structured lifestyles." }
 ];
 
@@ -61,6 +68,7 @@ export default function QuizPage() {
   const [isSubmitting, setIsSubmitting] = useInMemoryPageState("quiz.isSubmitting", false);
   const [apiResult, setApiResult] = useInMemoryPageState("quiz.apiResult", null);
   const [apiError, setApiError] = useInMemoryPageState("quiz.apiError", "");
+  const [showExplanation, setShowExplanation] = useState(false);
 
   const currentQuestion = questions[currentIndex];
   const selectedValue = answersById[currentQuestion.id] ?? "";
@@ -76,10 +84,16 @@ export default function QuizPage() {
         id: apiResult.match.id,
         name: apiResult.match.name,
         summary: apiResult.summary || "AI result generated.",
+        personalitySummary: apiResult.personalitySummary || "",
         confidence: apiResult.match.confidence,
         grounding: apiResult.grounding || [],
         shareCaptions: apiResult.shareCaptions || [],
-        imageUrl: resolvePetImageUrl(apiResult.match.imageUrl || apiResult.imageUrl, apiResult.match.id)
+        imageUrl: resolvePetImageUrl(
+          apiResult.match.imageUrl || apiResult.imageUrl,
+          apiResult.match.id,
+          apiResult.match.name,
+          apiResult.match.petType
+        )
       };
     }
 
@@ -87,10 +101,11 @@ export default function QuizPage() {
       id: scoring.recommendation.id,
       name: scoring.recommendation.name,
       summary: scoring.recommendation.summary,
+      personalitySummary: "",
       confidence: scoring.recommendation.confidence,
       grounding: [],
       shareCaptions: [],
-      imageUrl: getPetImageById(scoring.recommendation.id)
+      imageUrl: getPetImageById(scoring.recommendation.id, scoring.recommendation.name)
     };
   }, [apiResult, scoring]);
 
@@ -142,13 +157,14 @@ export default function QuizPage() {
         id: computedScoring.recommendation.id,
         name: computedScoring.recommendation.name,
         confidence: computedScoring.recommendation.confidence,
-        imageUrl: getPetImageById(computedScoring.recommendation.id)
+        imageUrl: getPetImageById(computedScoring.recommendation.id, computedScoring.recommendation.name)
       },
       summary: computedScoring.recommendation.summary,
+      personalitySummary: "",
       grounding: [],
       topTraits: computedScoring.topTraits,
       traits: computedScoring.normalized,
-      imageUrl: getPetImageById(computedScoring.recommendation.id),
+      imageUrl: getPetImageById(computedScoring.recommendation.id, computedScoring.recommendation.name),
       answers
     };
 
@@ -170,21 +186,27 @@ export default function QuizPage() {
         match: {
           id: result.match?.id || computedScoring.recommendation.id,
           name: result.match?.name || computedScoring.recommendation.name,
+          petType: result.match?.petType,
           confidence:
             typeof result.match?.confidence === "number"
               ? result.match.confidence
               : computedScoring.recommendation.confidence,
           imageUrl: resolvePetImageUrl(
             result.match?.imageUrl || result.imageUrl,
-            result.match?.id || computedScoring.recommendation.id
+            result.match?.id || computedScoring.recommendation.id,
+            result.match?.name || computedScoring.recommendation.name,
+            result.match?.petType
           )
         },
         summary: result.summary || computedScoring.recommendation.summary,
+        personalitySummary: result.personalitySummary || "",
         grounding: result.grounding || [],
         shareCaptions: result.shareCaptions || [],
         imageUrl: resolvePetImageUrl(
           result.match?.imageUrl || result.imageUrl,
-          result.match?.id || computedScoring.recommendation.id
+          result.match?.id || computedScoring.recommendation.id,
+          result.match?.name || computedScoring.recommendation.name,
+          result.match?.petType
         )
       };
     } catch {
@@ -236,19 +258,6 @@ export default function QuizPage() {
     await goNext(value);
   };
 
-  const submitQuiz = async () => {
-    const allQuestionsAnswered = questions.every((question) => answersById[question.id]);
-    if (!allQuestionsAnswered) {
-      setTouched(true);
-      return;
-    }
-
-    setTouched(false);
-    setApiError("");
-    setIsSubmitting(true);
-    await submitAnswers(answersById);
-  };
-
   const resetQuiz = () => {
     setAnswersById({});
     setCurrentIndex(0);
@@ -262,53 +271,43 @@ export default function QuizPage() {
   };
 
   const showDebugResult = async () => {
-    const match = DEBUG_MATCHES[Math.floor(Math.random() * DEBUG_MATCHES.length)];
-    const confidence = Number((0.72 + Math.random() * 0.27).toFixed(3));
-    const realImageUrl = await getDebugBreedImage(match.name, match.petType);
-    const traits = { energy: 0.5, sociability: 0.5, independence: 0.5, routine: 0.5, trainability: 0.5 };
-    const shareCaptions = [
-      `My Purrish&Co. debug result says I'm a match for a ${match.name} 🐾 What pet matches you?`,
-      `Apparently, my personality matches a ${match.name}. Take the Purrish&Co. quiz and find yours!`,
-      `Would you get the same result? Discover your person-pet match with Purrish&Co. ✨`
-    ];
-    const matchWithImage = {
-      ...match,
-      confidence,
-      imageUrl: realImageUrl || getPetImageById(match.id)
-    };
     const debugAnswers = questions.map((question) => {
       const option = question.options[Math.floor(Math.random() * question.options.length)];
       return { questionId: question.id, value: option.value };
     });
+    const debugAnswersById = Object.fromEntries(
+      debugAnswers.map((answer) => [answer.questionId, answer.value])
+    );
+    const computedScoring = scoreQuiz(questions, debugAnswersById);
 
-    let persistence = { enabled: false, saved: false };
     try {
-      const saveResponse = await saveDebugQuizResult({
+      const result = await postJson("/api/quiz/evaluate", {
         sessionId,
-        match: matchWithImage,
-        traits,
-        topTraits: [],
-        shareCaptions,
         answers: debugAnswers,
-        questionCount: debugAnswers.length
+        questionCount: debugAnswers.length,
+        traits: computedScoring.normalized,
+        topTraits: computedScoring.topTraits
       });
-      persistence = saveResponse?.persistence || persistence;
+      setApiResult(result);
+      setApiError("");
+      setSubmitted(true);
     } catch {
-      persistence = { enabled: true, saved: false, error: "debug_result_save_failed" };
+      const fallbackMatch = DEBUG_MATCHES[Math.floor(Math.random() * DEBUG_MATCHES.length)];
+      setApiResult({
+        match: {
+          ...fallbackMatch,
+          confidence: computedScoring.recommendation.confidence,
+          imageUrl: getPetImageById(fallbackMatch.id, fallbackMatch.name, fallbackMatch.petType)
+        },
+        summary: `${fallbackMatch.summary} This is a local debug fallback.`,
+        personalitySummary: buildPersonalitySummary(computedScoring.topTraits),
+        grounding: [],
+        traits: computedScoring.normalized,
+        topTraits: computedScoring.topTraits
+      });
+      setApiError("AI service is currently unavailable. Showing a local debug fallback.");
+      setSubmitted(true);
     }
-
-    const debugResult = {
-      match: matchWithImage,
-      summary: `${match.summary} This is a randomized debug result for quickly testing sharing.`,
-      grounding: [],
-      traits,
-      shareCaptions,
-      persistence
-    };
-
-    setApiResult(debugResult);
-    setApiError("");
-    setSubmitted(true);
   };
 
   return (
@@ -351,41 +350,63 @@ export default function QuizPage() {
                 Try Again
               </button>
             </div>
+          ) : isSubmitting ? (
+            <div className="quiz-loading quiz-loading--matching" role="status" aria-live="polite">
+              <div className="quiz-loading-paw" aria-hidden="true">🐾</div>
+              <p className="quiz-loading-kicker">Your answers are in</p>
+              <h2>Finding your perfect pet match...</h2>
+              <p className="quiz-hint">We're comparing your personality with our breed knowledge base.</p>
+              <div className="quiz-loading-steps" aria-hidden="true">
+                <span><i className="fas fa-user-check" /> Reading your vibe</span>
+                <span><i className="fas fa-magnifying-glass" /> Comparing breeds</span>
+                <span><i className="fas fa-heart" /> Choosing your match</span>
+              </div>
+            </div>
           ) : submitted ? (
             <div className="quiz-result-panel">
               <h2>🐾 Your Result Is Ready</h2>
               <img src={displayResult.imageUrl} alt={displayResult.name || "Recommended pet"} className="quiz-result-image quiz-result-image--large" />
               <p className="result-eyebrow">Your personality match</p>
-              <h3>{displayResult.name}</h3>
-              <p className="result-summary">{displayResult.summary}</p>
-              <div className="result-metrics">
-                <span><strong>{Math.round((displayResult.confidence || 0) * 100)}%</strong> confidence</span>
-                <span><strong>{scoring.topTraits.length}</strong> top traits</span>
+              <div className="result-heading-row">
+                <h3>{displayResult.name}</h3>
+                <button
+                  type="button"
+                  className="result-explanation-btn"
+                  aria-expanded={showExplanation}
+                  aria-label="Why this match?"
+                  onClick={() => setShowExplanation((value) => !value)}
+                >
+                  ?
+                </button>
               </div>
-              <p className="quiz-hint result-traits">Top traits: {scoring.topTraits.map((item) => item.key).join(", ")}</p>
-              {displayResult.grounding.length > 0 && <p className="quiz-hint">Grounded from: {displayResult.grounding[0].source}</p>}
+              <p className="result-summary">{displayResult.personalitySummary || buildPersonalitySummary(scoring.topTraits)}</p>
+              {showExplanation && (
+                <p className="quiz-hint result-traits">{displayResult.summary}</p>
+              )}
               {apiError && <p className="quiz-error">{apiError}</p>}
               <div className="quiz-buttons">
-                <button className="btn btn-primary" type="button" onClick={resetQuiz}>Retake Quiz</button>
+                <button className="btn btn-outline" type="button" onClick={resetQuiz}>
+                  <i className="fas fa-rotate-left" aria-hidden="true" /> Retake Quiz
+                </button>
+                <ShareResultCard
+                  title="Share your quiz result"
+                  subtitle={`${displayResult.name} · ${matchStrengthLabel(displayResult.confidence || 0)}`}
+                  shareText={`🐾 The Purrish&Co. quiz says I'm a match for a ${displayResult.name}! Curious what pet fits YOU? Take the quiz! ✨`}
+                  shareCaptions={displayResult.shareCaptions}
+                  crossPromoText="Want to turn this personality into a personalized pet sticker?"
+                  crossPromoPath="/pet"
+                  onDownload={() => exportQuizResultImage({
+                    match: { name: displayResult.name, confidence: displayResult.confidence },
+                    summary: displayResult.summary,
+                    topTraits: scoring.topTraits
+                  })}
+                  getShareFile={() => createQuizResultImageFile({
+                    match: { name: displayResult.name, confidence: displayResult.confidence },
+                    summary: displayResult.summary,
+                    topTraits: scoring.topTraits
+                  })}
+                />
               </div>
-              <ShareResultCard
-                title="Share your quiz result"
-                subtitle={`${displayResult.name} · ${Math.round((displayResult.confidence || 0) * 100)}% confidence`}
-                shareText={`🐾 The Purrish&Co. quiz says I'm a match for a ${displayResult.name}! ${Math.round((displayResult.confidence || 0) * 100)}% confidence. Curious what pet fits YOU? Take the quiz! ✨`}
-                shareCaptions={displayResult.shareCaptions}
-                crossPromoText="Want to turn this personality into a personalized pet sticker?"
-                crossPromoPath="/pet"
-                onDownload={() => exportQuizResultImage({
-                  match: { name: displayResult.name, confidence: displayResult.confidence },
-                  summary: displayResult.summary,
-                  topTraits: scoring.topTraits
-                })}
-                getShareFile={() => createQuizResultImageFile({
-                  match: { name: displayResult.name, confidence: displayResult.confidence },
-                  summary: displayResult.summary,
-                  topTraits: scoring.topTraits
-                })}
-              />
             </div>
           ) : (
             <>
@@ -420,9 +441,6 @@ export default function QuizPage() {
             <i className="fas fa-paw fa-4x" />
             <h3>Complete all {TOTAL_QUESTION_COUNT} questions for your result</h3>
             <p>Your matching pet will appear here after completing the quiz.</p>
-            <button className="btn btn-primary" type="button" onClick={submitQuiz} disabled={isSubmitting}>
-              {isSubmitting ? "Generating..." : "Show My Result"}
-            </button>
           </div>
         </section>
       )}

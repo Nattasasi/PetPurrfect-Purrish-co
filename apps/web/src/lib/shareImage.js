@@ -1,3 +1,5 @@
+import { matchStrengthLabel, traitAdjective } from "./personalityInsights";
+
 function capitalizeWord(value) {
   if (!value) {
     return "";
@@ -29,10 +31,11 @@ function renderQuizResultCanvas(payload) {
   const summary =
     payload?.summary ||
     "Your personality points to a great companion. See your detailed result in app.";
-  const confidence = Math.round((payload?.match?.confidence || 0) * 100);
-  const topTraits = (payload?.topTraits || [])
+  const matchStrength = capitalizeWord(matchStrengthLabel(payload?.match?.confidence || 0));
+  const personalityTraits = (payload?.topTraits || [])
     .slice(0, 3)
-    .map((item) => capitalizeWord(item.key))
+    .map((item) => capitalizeWord(traitAdjective(item.key, item.value)))
+    .filter(Boolean)
     .join(" • ");
 
   ctx.fillStyle = "#333";
@@ -51,10 +54,10 @@ function renderQuizResultCanvas(payload) {
 
   ctx.fillStyle = "#333";
   ctx.font = "600 42px Poppins, sans-serif";
-  ctx.fillText(`Confidence: ${confidence}%`, 90, 660);
+  ctx.fillText(matchStrength, 90, 660);
 
   ctx.font = "500 34px Poppins, sans-serif";
-  ctx.fillText(`Top Traits: ${topTraits || "Balanced"}`, 90, 730);
+  ctx.fillText(`Your Personality: ${personalityTraits || "Balanced"}`, 90, 730);
 
   ctx.font = "500 30px Poppins, sans-serif";
   ctx.fillStyle = "#666";

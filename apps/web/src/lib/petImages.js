@@ -31,12 +31,40 @@ const PET_IMAGE_MAP = {
     accent: "#ff9f6e",
     textColor: "#5a3b2e"
   }),
+  labrador_retriever: createSvgDataUri({
+    title: "Labrador Retriever",
+    subtitle: "Warm, upbeat, and social",
+    background: "#ffe7b8",
+    accent: "#f4a261",
+    textColor: "#5b3f2a"
+  }),
+  corgi: createSvgDataUri({
+    title: "Corgi",
+    subtitle: "Cheerful, people-loving, and structured",
+    background: "#ffd9be",
+    accent: "#ff9b71",
+    textColor: "#5b3529"
+  }),
+  poodle: createSvgDataUri({
+    title: "Poodle",
+    subtitle: "Smart, adaptable, and quick-learning",
+    background: "#f5d7ff",
+    accent: "#c77dff",
+    textColor: "#55335f"
+  }),
   border_collie: createSvgDataUri({
     title: "Border Collie",
     subtitle: "Sharp, active, and playful",
     background: "#cbe8ff",
     accent: "#6fa8dc",
     textColor: "#23435f"
+  }),
+  husky: createSvgDataUri({
+    title: "Husky",
+    subtitle: "Energetic, bold, and adventurous",
+    background: "#d7ecff",
+    accent: "#7bb6e6",
+    textColor: "#24445f"
   }),
   shiba_inu: createSvgDataUri({
     title: "Shiba Inu",
@@ -52,25 +80,84 @@ const PET_IMAGE_MAP = {
     accent: "#b68cff",
     textColor: "#43315f"
   }),
+  siamese_cat: createSvgDataUri({
+    title: "Siamese Cat",
+    subtitle: "Expressive, social, and curious",
+    background: "#ffdff1",
+    accent: "#ff8ec7",
+    textColor: "#5b3150"
+  }),
+  persian_cat: createSvgDataUri({
+    title: "Persian Cat",
+    subtitle: "Soft-spoken, cozy, and calm",
+    background: "#f0e7ff",
+    accent: "#a98ff0",
+    textColor: "#42385c"
+  }),
   british_shorthair: createSvgDataUri({
     title: "British Shorthair",
     subtitle: "Steady, plush, and classic",
     background: "#dbe4f3",
     accent: "#7b97c7",
     textColor: "#2f4058"
+  }),
+  dachshund: createSvgDataUri({
+    title: "Dachshund",
+    subtitle: "Curious, confident, and charming",
+    background: "#ffe2d6",
+    accent: "#f08f6a",
+    textColor: "#5f382c"
   })
 };
 
-const DEFAULT_IMAGE = PET_IMAGE_MAP.golden_retriever;
+// Distinct palettes so breeds outside PET_IMAGE_MAP don't all render identically.
+const GENERATED_PALETTES = [
+  { background: "#ffdca8", accent: "#ff9f6e", textColor: "#5a3b2e" },
+  { background: "#cbe8ff", accent: "#6fa8dc", textColor: "#23435f" },
+  { background: "#eadcff", accent: "#b68cff", textColor: "#43315f" },
+  { background: "#ffdff1", accent: "#ff8ec7", textColor: "#5b3150" },
+  { background: "#d7ecff", accent: "#7bb6e6", textColor: "#24445f" },
+  { background: "#ffe2d6", accent: "#f08f6a", textColor: "#5f382c" },
+  { background: "#f5d7ff", accent: "#c77dff", textColor: "#55335f" },
+  { background: "#dbe4f3", accent: "#7b97c7", textColor: "#2f4058" }
+];
 
-export function getPetImageById(matchId) {
-  return PET_IMAGE_MAP[matchId] || DEFAULT_IMAGE;
+function hashString(value) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return hash;
 }
 
-export function resolvePetImageUrl(imageUrl, matchId) {
+function titleCaseFromId(matchId) {
+  return matchId
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function generatePlaceholderImage(matchId, name, petType) {
+  const title = name || titleCaseFromId(matchId || "pet");
+  const palette = GENERATED_PALETTES[hashString(title) % GENERATED_PALETTES.length];
+  const subtitle = petType === "cat" ? "Your feline personality match" : petType === "dog" ? "Your canine personality match" : "Your personality match";
+
+  return createSvgDataUri({ title, subtitle, ...palette });
+}
+
+export function getPetImageById(matchId, name, petType) {
+  if (matchId && PET_IMAGE_MAP[matchId]) {
+    return PET_IMAGE_MAP[matchId];
+  }
+
+  return generatePlaceholderImage(matchId, name, petType);
+}
+
+export function resolvePetImageUrl(imageUrl, matchId, name, petType) {
   if (typeof imageUrl === "string" && imageUrl && !imageUrl.startsWith("/images/")) {
     return imageUrl;
   }
 
-  return getPetImageById(matchId);
+  return getPetImageById(matchId, name, petType);
 }

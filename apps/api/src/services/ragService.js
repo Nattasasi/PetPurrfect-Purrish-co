@@ -2,47 +2,13 @@ import { saveQuizResult } from "./quizResultRepository.js";
 import { fetchPetKnowledge } from "../adapters/externalPetApi.js";
 import { fetchBreedImageUrl } from "../adapters/petImageApi.js";
 import { env } from "../config/env.js";
+import { getKnowledgeBase, loadKnowledgeBase } from "./petKnowledgeBase.js";
 
 const TRAIT_KEYS = ["energy", "sociability", "independence", "routine", "trainability"];
 const OLLAMA_TIMEOUT_MS = 300000;
 const GROUNDING_CANDIDATE_COUNT = 3;
 const MAX_SHARE_CAPTIONS = 3;
 const MAX_SHARE_CAPTION_LENGTH = 180;
-
-const FALLBACK_PROFILES = [
-  {
-    id: "golden_retriever",
-    name: "Golden Retriever",
-    petType: "dog",
-    summary: "Friendly, social, and well-suited to active owners.",
-    imageUrl: "/images/hero-dog.png",
-    traits: { energy: 0.85, sociability: 0.9, independence: 0.35, routine: 0.6, trainability: 0.9 }
-  },
-  {
-    id: "shiba_inu",
-    name: "Shiba Inu",
-    petType: "dog",
-    summary: "Independent, alert, and confident with a balanced routine.",
-    imageUrl: "/images/product6.jpg",
-    traits: { energy: 0.65, sociability: 0.45, independence: 0.85, routine: 0.6, trainability: 0.5 }
-  },
-  {
-    id: "ragdoll_cat",
-    name: "Ragdoll Cat",
-    petType: "cat",
-    summary: "Calm, affectionate, and ideal for relaxed households.",
-    imageUrl: "/images/product4.jpg",
-    traits: { energy: 0.35, sociability: 0.8, independence: 0.5, routine: 0.65, trainability: 0.5 }
-  },
-  {
-    id: "border_collie",
-    name: "Border Collie",
-    petType: "dog",
-    summary: "Highly trainable and built for active, structured lifestyles.",
-    imageUrl: "/images/hero-dog.png",
-    traits: { energy: 0.95, sociability: 0.7, independence: 0.4, routine: 0.8, trainability: 0.95 }
-  }
-];
 
 function scoreCandidate(traits, candidate) {
   const distance = TRAIT_KEYS.reduce((sum, key) => {
@@ -63,7 +29,8 @@ function scoreCandidate(traits, candidate) {
 function rankCandidates(traits, candidates) {
   const scored = candidates.map((candidate) => scoreCandidate(traits, candidate));
   scored.sort((a, b) => a.distance - b.distance);
-  return scored.length > 0 ? scored : [scoreCandidate(traits, FALLBACK_PROFILES[0])];
+  const kb = getKnowledgeBase();
+  return scored.length > 0 ? scored : [scoreCandidate(traits, kb[0])];
 }
 
 // Builds a prompt that only lets Gemini generate text grounded in the profiles already retrieved above.
@@ -125,6 +92,24 @@ async function generateGroundedSummary(traits, rankedCandidates) {
   try {
     const prompt = buildGroundedPrompt(traits, rankedCandidates);
     return await callOllama(prompt);
+  } catch (error) {
+    return null;
+  }
+}
+
+function buildPersonalityPrompt(traits, topTraits = [], selected) {
+  return `You are writing a warm, concise personality insight for a pet matching quiz.
+
+User trait scores (0 to 1): ${JSON.stringify(traits)}
+Strongest traits: ${JSON.stringify(topTraits)}
+Matched pet profile: ${selected.name} — ${selected.summary}
+
+Write 2-4 natural sentences directly to the user. Explain their personality and lifestyle in friendly language, then connect it briefly to why this pet could fit them. Use only the trait scores and retrieved profile above. Do not mention scores, algorithms, AI, prompts, retrieval, or data sources. Do not claim certainty or invent facts. Return plain text only. `;
+}
+
+async function generatePersonalitySummary(traits, topTraits, selected) {
+  try {
+    return await callOllama(buildPersonalityPrompt(traits, topTraits, selected));
   } catch (error) {
     return null;
   }
@@ -214,9 +199,10 @@ export async function evaluateQuiz(payload = {}) {
   const traits = payload.traits || {};
   const answers = payload.answers || [];
 
-  // Retrieve: rank the known breed profiles locally, then look up the matched
-  // breed by name in the Ninja API to ground the summary in real breed facts.
-  const ranked = rankCandidates(traits, FALLBACK_PROFILES);
+  // Retrieve: rank the known breed profiles locally (from Ninja API knowledge base),
+  // then look up the matched breed by name in the Ninja API to ground the summary in real breed facts.
+  const kb = await loadKnowledgeBase();
+  const ranked = rankCandidates(traits, kb);
   const selected = ranked[0];
   const queryName = cleanBreedNameForQuery(selected.name, selected.petType);
   const knowledge = await fetchPetKnowledge(queryName);
@@ -229,26 +215,30 @@ export async function evaluateQuiz(payload = {}) {
   const groundingCandidates = ninjaRecord
     ? [{ ...selected, summary: ninjaRecord.summary }, ...ranked.slice(1, GROUNDING_CANDIDATE_COUNT)]
     : ranked.slice(0, GROUNDING_CANDIDATE_COUNT);
-  const [groundedSummaryResult, shareCaptionsResult] = await Promise.all([
+  const [groundedSummaryResult, personalitySummaryResult, shareCaptionsResult] = await Promise.all([
     generateGroundedSummary(traits, groundingCandidates),
+    generatePersonalitySummary(traits, payload.topTraits || [], selected),
     generateShareCaptions(selected, traits)
   ]);
   const groundedSummary = groundedSummaryResult;
+  const personalitySummary = personalitySummaryResult;
   const shareCaptions = shareCaptionsResult;
   const breedImageUrl = await fetchBreedImageUrl(queryName, selected.petType);
+  const knowledgeBaseSource = selected.source || "fallback-profile";
 
   const response = {
-    provider: ninjaRecord ? "ninja-api" : "fallback",
-    sourceCount: ninjaRecord ? 1 : FALLBACK_PROFILES.length,
+    provider: ninjaRecord ? `${knowledgeBaseSource}+ninja-api` : knowledgeBaseSource,
+    sourceCount: kb.length,
     match: {
       id: selected.id,
       name: selected.name,
+      petType: selected.petType || null,
       confidence: selected.confidence,
       imageUrl: breedImageUrl || selected.imageUrl || null
     },
     grounding: buildGrounding(
       ninjaRecord ? { summary: ninjaRecord.summary } : selected,
-      ninjaRecord ? knowledge.source : "fallback-profile"
+      ninjaRecord ? `${knowledgeBaseSource};${knowledge.source}` : knowledgeBaseSource
     ),
     llmProvider: groundedSummary ? "gemini" : "none",
     summary:
@@ -256,6 +246,7 @@ export async function evaluateQuiz(payload = {}) {
       ninjaRecord?.summary ||
       selected.summary ||
       "This recommendation is computed from your quiz trait profile and external pet data.",
+    personalitySummary,
     traits,
     shareCaptions,
     shareCaptionModel: env.ollama.model

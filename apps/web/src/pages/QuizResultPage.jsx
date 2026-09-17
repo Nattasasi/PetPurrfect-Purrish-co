@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { exportQuizResultImage } from "../lib/shareImage";
 import { resolvePetImageUrl } from "../lib/petImages";
+import { buildPersonalitySummary, matchStrengthLabel } from "../lib/personalityInsights";
 
 const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const QUIZ_STORAGE_VERSION_KEY = "purrishco.quiz.storage.version";
@@ -59,19 +60,21 @@ export default function QuizResultPage() {
     );
   }
 
-  const confidence = Math.round((result.match?.confidence || 0) * 100);
-  const topTraits = (result.topTraits || [])
-    .slice(0, 3)
-    .map((item) => item.key)
-    .join(", ");
+  const personalitySummary = result.personalitySummary || buildPersonalitySummary(result.topTraits || []);
+  const matchStrength = matchStrengthLabel(result.match?.confidence || 0);
 
-  const imageUrl = resolvePetImageUrl(result.imageUrl || result.match?.imageUrl, result.match?.id);
+  const imageUrl = resolvePetImageUrl(
+    result.imageUrl || result.match?.imageUrl,
+    result.match?.id,
+    result.match?.name,
+    result.match?.petType
+  );
 
   return (
     <>
       <section className="page-header">
         <h1>🐾 Your Quiz Result</h1>
-        <p>Here is your AI-grounded personality match.</p>
+        <p>Here's what your answers reveal about you and your ideal pet match.</p>
       </section>
 
       <section className="result-section">
@@ -83,12 +86,9 @@ export default function QuizResultPage() {
           />
           <i className="fas fa-paw fa-4x" />
           <h3>{result.match?.name || "Your Pet Match"}</h3>
-          <p>{result.summary}</p>
-          <p className="quiz-hint">Confidence: {confidence}%</p>
-          <p className="quiz-hint">Top traits: {topTraits || "balanced"}</p>
-          {result.grounding?.length > 0 && (
-            <p className="quiz-hint">Grounded from: {result.grounding[0].source}</p>
-          )}
+          <p>{personalitySummary}</p>
+          <p className="quiz-hint">{result.summary}</p>
+          <p className="quiz-hint">A {result.match?.name || "pet"} looks like {matchStrength} for your personality!</p>
           {result.error && <p className="quiz-error">{result.error}</p>}
 
           <div className="quiz-buttons">

@@ -54,7 +54,23 @@ async function resolveDogSlug(breedName) {
   return { breed: words[words.length - 1], subBreed: null };
 }
 
-async function fetchDogImage(breedName) {
+// TheDogAPI needs its own key (not interchangeable with CAT_API_KEY) but covers
+// far more breeds (e.g. Lagotto Romagnolo) than Dog CEO's fixed breed list.
+async function fetchDogImageFromTheDogApi(breedName) {
+  const apiKey = process.env.DOG_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+
+  const headers = { "x-api-key": apiKey };
+  const searchUrl = `https://api.thedogapi.com/v1/breeds/search?q=${encodeURIComponent(breedName)}`;
+  const breeds = await fetchJson(searchUrl, headers);
+  const match = Array.isArray(breeds) ? breeds[0] : null;
+
+  return match?.image?.url || (match?.reference_image_id ? `https://cdn2.thedogapi.com/images/${match.reference_image_id}.jpg` : null);
+}
+
+async function fetchDogImageFromDogCeo(breedName) {
   const slug = await resolveDogSlug(breedName);
   if (!slug) {
     return null;
@@ -69,6 +85,15 @@ async function fetchDogImage(breedName) {
 
   const breedOnly = await fetchJson(`https://dog.ceo/api/breed/${slug.breed}/images/random`);
   return breedOnly?.status === "success" ? breedOnly.message : null;
+}
+
+async function fetchDogImage(breedName) {
+  const fromDogApi = await fetchDogImageFromTheDogApi(breedName);
+  if (fromDogApi) {
+    return fromDogApi;
+  }
+
+  return fetchDogImageFromDogCeo(breedName);
 }
 
 async function fetchCatImage(breedName) {
