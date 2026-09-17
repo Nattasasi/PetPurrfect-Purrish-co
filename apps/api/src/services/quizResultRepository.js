@@ -2,6 +2,17 @@ import { getFirestoreDb } from "../config/firebaseAdmin.js";
 import { env } from "../config/env.js";
 
 export async function saveQuizResult(payload) {
+  const answers = Array.isArray(payload.answers) ? payload.answers : [];
+  const questionCount = Number(payload.questionCount);
+  const hasCompleteAnswers =
+    questionCount > 0 &&
+    answers.length === questionCount &&
+    answers.every((answer) => answer && typeof answer.value === "string" && answer.value.trim().length > 0);
+
+  if (!hasCompleteAnswers) {
+    return { enabled: false, saved: false, skipped: true, reason: "incomplete_answers" };
+  }
+
   if (env.dataStore !== "firebase") {
     return { enabled: false, saved: false };
   }
@@ -17,7 +28,7 @@ export async function saveQuizResult(payload) {
     source: payload.source || "api",
     traits: payload.traits || {},
     topTraits: payload.topTraits || [],
-    answers: payload.answers || [],
+    answers,
     shareCaptions: payload.shareCaptions || [],
     shareCaptionModel: payload.shareCaptionModel || null,
     generatedAt: payload.generatedAt || new Date().toISOString(),

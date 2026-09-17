@@ -2,9 +2,15 @@ import * as tf from "@tensorflow/tfjs";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import { classifyBreed } from "./breedClassifier";
 import { detectPetParts } from "./partDetection";
+import { extractPetColors } from "./colorExtraction";
+import { getForegroundMask, createSegmentationDebugImage } from "./segmentation";
 
 const MIN_DETECTION_SCORE = 0.2;
 const BOX_PADDING_RATIO = 0.12;
+const COLOR_SAMPLE_SIZE = 48;
+// Well above the 1-in-47 chance baseline, so an unrelated (non-pet) photo
+// forced through the breed classifier doesn't get accepted as a false positive.
+const FALLBACK_BREED_CONFIDENCE = 0.5;
 
 let cocoModelPromise = null;
 
@@ -140,7 +146,28 @@ export async function runPetInference(imageElement) {
       .filter((item) => isPetLabel(item.class || ""))
       .sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    const bestMatch = petCandidates[0];
+    let bestMatch = petCandidates[0];
+    let overallBox = bestMatch
+      ? padBox({ x: bestMatch.bbox[0], y: bestMatch.bbox[1], width: bestMatch.bbox[2], height: bestMatch.bbox[3] }, imageElement)
+      : null;
+
+    // coco-ssd is a generic 90-class detector and can flat-out miss (or
+    // misclassify) a pet in tightly-cropped close-up photos. As a fallback,
+    // try the dedicated 47-breed cat/dog classifier directly on the whole
+    // photo — since every one of its classes IS a cat or dog breed, a
+    // confident result there is strong evidence a pet is actually present.
+    let wholeImageBreedMatch = null;
+    if (!bestMatch) {
+      wholeImageBreedMatch = await classifyBreed(imageElement);
+      if (wholeImageBreedMatch && wholeImageBreedMatch.confidence >= FALLBACK_BREED_CONFIDENCE) {
+        overallBox = { x: 0, y: 0, width: imageElement.width, height: imageElement.height };
+        bestMatch = {
+          class: wholeImageBreedMatch.petType === "cat" ? "cat" : "dog",
+          score: wholeImageBreedMatch.confidence,
+          bbox: [0, 0, imageElement.width, imageElement.height]
+        };
+      }
+    }
 
     if (!bestMatch) {
       return {
@@ -152,16 +179,14 @@ export async function runPetInference(imageElement) {
       };
     }
 
-    const [boxX, boxY, boxWidth, boxHeight] = bestMatch.bbox;
-    const overallBox = padBox({ x: boxX, y: boxY, width: boxWidth, height: boxHeight }, imageElement);
-
     const fallback = fallbackAttributes(imageElement);
     const aspectRatio = overallBox.width / Math.max(overallBox.height, 1);
 
     // Classify the cropped pet region (rather than the whole photo) so the
-    // breed model isn't distracted by background clutter.
+    // breed model isn't distracted by background clutter. Reuse the
+    // whole-image classification above when that's what found the pet.
     const croppedCanvas = cropToCanvas(imageElement, overallBox);
-    const breedMatch = await classifyBreed(croppedCanvas);
+    const breedMatch = wholeImageBreedMatch || (await classifyBreed(croppedCanvas));
 
     const partResult = detectPetParts(croppedCanvas);
     const partBoxes = partResult.boxes.map((box) => ({
@@ -169,6 +194,18 @@ export async function runPetInference(imageElement) {
       x: box.x + overallBox.x,
       y: box.y + overallBox.y
     }));
+
+    // Segment the pet out of its crop (foreground-probability mask) so fur
+    // colors are sampled from the actual animal, not background/other
+    // objects the padded detection box happens to include. Falls back to
+    // geometric/radial weighting alone (inside extractPetColors) if the
+    // segmentation model can't be loaded or run.
+    const foregroundMask = await getForegroundMask(croppedCanvas, COLOR_SAMPLE_SIZE);
+    const segmentationDebugImage = createSegmentationDebugImage(croppedCanvas, foregroundMask, COLOR_SAMPLE_SIZE);
+
+    // Extract a few representative fur tones from the cropped pet region and
+    // snap each to the nearest curated preset color for the sticker layers.
+    const colors = extractPetColors(croppedCanvas, foregroundMask) || undefined;
 
     const detectionLabel = bestMatch.class?.toLowerCase() || "";
     const petType = breedMatch?.petType || (detectionLabel.includes("cat") ? "cat" : "dog");
@@ -178,6 +215,7 @@ export async function runPetInference(imageElement) {
 
     const computedAttributes = {
       furColor: fallback.furColor,
+      colors,
       petBox: overallBox,
       earStyle,
       faceShape,
@@ -198,6 +236,7 @@ export async function runPetInference(imageElement) {
       bbox: overallBox,
       partBoxes,
       partDetectionMethod: partResult.method,
+      segmentationDebugImage,
       attributes: {
         ...computedAttributes,
         breed,

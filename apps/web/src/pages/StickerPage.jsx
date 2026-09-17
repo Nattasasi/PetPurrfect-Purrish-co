@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { exportStickerResultImage, createStickerResultImageFile } from "../lib/shareImage";
 import { createPetDebugImage, runPetInference } from "../lib/cv/inference";
-import { composeStickerImage } from "../lib/stickerComposer";
+import { composeStickerImage, getMatchedPresetInfo } from "../lib/stickerComposer";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
 import { generateStickerCaptions } from "../lib/apiClient";
 import ShareResultCard from "../components/share/ShareResultCard";
@@ -27,6 +27,8 @@ export default function StickerPage() {
   const [analysisError, setAnalysisError] = useInMemoryPageState("sticker.analysisError", "");
   const [analysisResult, setAnalysisResult] = useInMemoryPageState("sticker.analysisResult", null);
   const [debugImageUrl, setDebugImageUrl] = useInMemoryPageState("sticker.debugImageUrl", "");
+  const [segmentationDebugUrl, setSegmentationDebugUrl] = useInMemoryPageState("sticker.segmentationDebugUrl", "");
+  const [matchedPreset, setMatchedPreset] = useInMemoryPageState("sticker.matchedPreset", null);
   const [debugMode, setDebugMode] = useInMemoryPageState("sticker.debugMode", true);
   const [detectedAttributes, setDetectedAttributes] = useInMemoryPageState("sticker.detectedAttributes", {});
   const [composedStickerUrl, setComposedStickerUrl] = useInMemoryPageState("sticker.composedStickerUrl", "");
@@ -55,6 +57,8 @@ export default function StickerPage() {
     setAnalysisResult(null);
     setAnalysisError("");
     setDebugImageUrl("");
+    setSegmentationDebugUrl("");
+    setMatchedPreset(null);
     setDetectedAttributes({});
     setComposedStickerUrl("");
     setShareCaptions([]);
@@ -75,6 +79,8 @@ export default function StickerPage() {
       if (!inference?.validPet) {
         setDetectedAttributes({});
         setDebugImageUrl("");
+        setSegmentationDebugUrl("");
+        setMatchedPreset(null);
         setAnalysisError(inference?.reason || "Unable to analyze this image.");
         setIsGenerated(false);
         setIsAnalyzing(false);
@@ -82,11 +88,14 @@ export default function StickerPage() {
       }
 
       const debugPreview = createPetDebugImage(img, inference);
-      const composedImage = composeStickerImage(inference.breed, inference.attributes);
+      const composedImage = await composeStickerImage(inference.breed, inference.attributes, inference.attributes.colors);
+      const preset = getMatchedPresetInfo(inference.breed, inference.attributes, inference.attributes.colors);
 
       setDetectedAttributes(inference.attributes);
       setComposedStickerUrl(composedImage);
       setDebugImageUrl(debugPreview);
+      setSegmentationDebugUrl(inference.segmentationDebugImage || "");
+      setMatchedPreset(preset);
       setAnalysisError("");
       setIsGenerated(true);
       setIsAnalyzing(false);
@@ -124,7 +133,8 @@ export default function StickerPage() {
       earStyle: "pointed",
       petType: debugSticker.breed.toLowerCase().includes("cat") ? "cat" : "dog"
     };
-    const composedImage = composeStickerImage(debugSticker.breed, attributes);
+    const composedImage = await composeStickerImage(debugSticker.breed, attributes, undefined);
+    const preset = getMatchedPresetInfo(debugSticker.breed, attributes, undefined);
     const debugInference = {
       validPet: true,
       breed: debugSticker.breed,
@@ -141,6 +151,8 @@ export default function StickerPage() {
     setDetectedAttributes(attributes);
     setComposedStickerUrl(composedImage);
     setDebugImageUrl("");
+    setSegmentationDebugUrl("");
+    setMatchedPreset(preset);
     setAnalysisError("");
     setIsGenerated(true);
 
@@ -167,6 +179,8 @@ export default function StickerPage() {
     setAnalysisResult(null);
     setAnalysisError("");
     setDebugImageUrl("");
+    setSegmentationDebugUrl("");
+    setMatchedPreset(null);
     setDetectedAttributes({});
     setComposedStickerUrl("");
     setShareCaptions([]);
@@ -178,11 +192,11 @@ export default function StickerPage() {
   };
 
   const petDescriptor = analysisResult?.validPet
-    ? `${analysisResult.breed} · ${detectedAttributes.furColor || "playful"} fur · ${detectedAttributes.faceShape || "round"} face`
+    ? `${analysisResult.breed}${matchedPreset ? ` · ${matchedPreset.name}` : ""} · ${detectedAttributes.faceShape || "round"} face`
     : "Upload a cat or dog photo to begin analysis";
 
   const stickerShareCaption = analysisResult?.validPet
-    ? `🐾 My pet just got turned into a ${analysisResult.breed} sticker by Purrish&Co! ${capitalize(detectedAttributes.furColor || "playful")} fur, ${detectedAttributes.faceShape || "round"} face, 100% adorable. Get yours free with every order! 🐶✨`
+    ? `🐾 My pet just got turned into a ${analysisResult.breed} sticker by Purrish&Co! ${capitalize(matchedPreset?.name || "playful")} coloring, ${detectedAttributes.faceShape || "round"} face, 100% adorable. Get yours free with every order! 🐶✨`
     : "";
 
   const handleDownload = () => {
@@ -354,11 +368,33 @@ export default function StickerPage() {
                 <img src={debugImageUrl} alt="Detected pet debug result" className="debug-image" />
               </div>
 
+              {segmentationDebugUrl && (
+                <div className="debug-image-wrap">
+                  <img src={segmentationDebugUrl} alt="Pet segmentation mask" className="debug-image" />
+                  <p className="debug-caption">
+                    Green = pixels kept as pet fur, red = excluded as background
+                  </p>
+                </div>
+              )}
+
               <div className="debug-summary">
                 <h3>Detected Breed</h3>
                 <p className="debug-breed">{analysisResult.breed}</p>
                 <p>Detection confidence: {(analysisResult.confidence * 100).toFixed(0)}%</p>
                 <p>Breed match confidence: {((analysisResult.breedConfidence || 0) * 100).toFixed(0)}%</p>
+                {matchedPreset && (
+                  <>
+                    <h4>Color Preset Used</h4>
+                    <p className="debug-breed">{matchedPreset.name}</p>
+                    <ul className="part-list">
+                      {Object.entries(matchedPreset.colors).map(([layer, hex]) => (
+                        <li key={layer}>
+                          <span className="debug-swatch" style={{ backgroundColor: hex }} /> {layer}: {hex}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
                 {(analysisResult.breedAlternatives || []).length > 0 && (
                   <>
                     <h4>Other Possibilities</h4>

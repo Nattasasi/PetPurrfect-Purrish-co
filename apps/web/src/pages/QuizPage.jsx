@@ -156,6 +156,7 @@ export default function QuizPage() {
       const result = await postJson("/api/quiz/evaluate", {
         sessionId,
         answers,
+        questionCount: questionsForScoring.length,
         traits: computedScoring.normalized,
         topTraits: computedScoring.topTraits
       });
@@ -275,6 +276,10 @@ export default function QuizPage() {
       confidence,
       imageUrl: realImageUrl || getPetImageById(match.id)
     };
+    const debugAnswers = questions.map((question) => {
+      const option = question.options[Math.floor(Math.random() * question.options.length)];
+      return { questionId: question.id, value: option.value };
+    });
 
     let persistence = { enabled: false, saved: false };
     try {
@@ -283,7 +288,9 @@ export default function QuizPage() {
         match: matchWithImage,
         traits,
         topTraits: [],
-        shareCaptions
+        shareCaptions,
+        answers: debugAnswers,
+        questionCount: debugAnswers.length
       });
       persistence = saveResponse?.persistence || persistence;
     } catch {

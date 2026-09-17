@@ -274,6 +274,7 @@ export async function evaluateQuiz(payload = {}) {
       traits,
       topTraits: payload.topTraits || [],
       answers,
+      questionCount: payload.questionCount,
       shareCaptions: response.shareCaptions,
       shareCaptionModel: response.shareCaptionModel,
       provider: response.provider,

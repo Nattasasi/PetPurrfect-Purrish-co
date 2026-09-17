@@ -46,7 +46,8 @@ router.post("/debug/save-result", async (req, res) => {
       source: "debug",
       traits: body.traits || {},
       topTraits: Array.isArray(body.topTraits) ? body.topTraits : [],
-      answers: [],
+      answers: Array.isArray(body.answers) ? body.answers : [],
+      questionCount: body.questionCount,
       shareCaptions: Array.isArray(body.shareCaptions) ? body.shareCaptions : [],
       shareCaptionModel: null,
       generatedAt: new Date().toISOString()
