@@ -5,8 +5,8 @@ import ortWasmMjsUrl from "./ort-runtime/ort-wasm-simd-threaded.mjs?url";
 // Same vendored wasm runtime as breedClassifier.js; setting this again here
 // is harmless (onnxruntime-web is a shared module instance either way).
 ort.env.wasm.wasmPaths = {
-  "ort-wasm-simd-threaded.wasm": ortWasmUrl,
-  "ort-wasm-simd-threaded.mjs": ortWasmMjsUrl
+  wasm: ortWasmUrl,
+  mjs: ortWasmMjsUrl
 };
 ort.env.wasm.numThreads = 1;
 
