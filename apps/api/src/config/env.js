@@ -7,7 +7,7 @@ export const env = {
   port: Number(process.env.PORT || 3001),
   dataStore: process.env.DATA_STORE || "firebase",
   firebase: {
-    projectId: process.env.FIREBASE_PROJECT_ID || "",
+    projectId: process.env.FIREBASE_PROJECT_ID || "purperfect-169de",
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL || "",
     privateKey: process.env.FIREBASE_PRIVATE_KEY || "",
     applicationDefault: Boolean(process.env.GOOGLE_APPLICATION_CREDENTIALS)

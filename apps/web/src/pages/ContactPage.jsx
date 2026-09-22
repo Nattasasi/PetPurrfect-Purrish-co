@@ -1,4 +1,9 @@
+import { useEffect, useRef } from "react";
+import { connectContactForm } from "../../../../js/ingestion-client.mjs";
+
 export default function ContactPage() {
+  const formRef = useRef(null);
+  useEffect(() => connectContactForm(formRef.current), []);
   return (
     <>
       <section className="page-header">
@@ -30,12 +35,13 @@ export default function ContactPage() {
       <section className="contact-section">
         <div className="contact-form">
           <h2>Send Us a Message</h2>
-          <form>
-            <input type="text" placeholder="Full Name" required />
-            <input type="email" placeholder="Email Address" required />
-            <input type="text" placeholder="Subject" />
-            <textarea rows="6" placeholder="Your Message" />
-            <button className="btn btn-primary">Send Message</button>
+          <form ref={formRef}>
+            <input name="name" aria-label="Full name" type="text" placeholder="Full Name" minLength={2} maxLength={100} required />
+            <input name="email" aria-label="Email address" type="email" placeholder="Email Address" maxLength={150} required />
+            <input name="subject" aria-label="Subject" type="text" placeholder="Subject" maxLength={150} />
+            <textarea name="message" aria-label="Message" rows="6" placeholder="Your Message" maxLength={2000} required />
+            <button type="submit" className="btn btn-primary">Send Message</button>
+            <p role="status" aria-live="polite" />
           </form>
         </div>
       </section>

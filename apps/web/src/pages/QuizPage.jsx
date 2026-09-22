@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { newEventId } from "../../../../js/ingestion-client.mjs";
 import staticQuizQuestions from "../data/quizQuestions.json";
 import { scoreQuiz } from "../lib/quizScoring";
 import { postJson, createSessionId, getDebugBreedImage, saveDebugQuizResult } from "../lib/apiClient";
@@ -49,6 +50,8 @@ const STATIC_QUESTIONS = staticQuizQuestions
   .map((question) => ({ ...question, options: shuffleOptions(question.options) }));
 
 export default function QuizPage() {
+  const submittingRef = useRef(false);
+  const [completionId, setCompletionId] = useInMemoryPageState("quiz.completionId", newEventId);
   const [sessionId] = useInMemoryPageState("quiz.sessionId", createSessionId);
   const [questions, setQuestions] = useInMemoryPageState("quiz.questions", STATIC_QUESTIONS);
   const [adaptiveLoading, setAdaptiveLoading] = useInMemoryPageState("quiz.adaptiveLoading", false);
@@ -129,6 +132,13 @@ export default function QuizPage() {
   };
 
   const submitAnswers = async (answersMap, questionsForScoring = questions) => {
+    if (submittingRef.current || submitted) return;
+    if (questionsForScoring.length !== TOTAL_QUESTION_COUNT || !questionsForScoring.every((question) => answersMap[question.id])) {
+      setIsSubmitting(false);
+      setTouched(true);
+      return;
+    }
+    submittingRef.current = true;
     const computedScoring = scoreQuiz(questionsForScoring, answersMap);
     const answers = questionsForScoring.map((question) => ({
       questionId: question.id,
@@ -154,6 +164,7 @@ export default function QuizPage() {
 
     try {
       const result = await postJson("/api/quiz/evaluate", {
+        completionId,
         sessionId,
         answers,
         traits: computedScoring.normalized,
@@ -194,9 +205,10 @@ export default function QuizPage() {
         error: "AI service unavailable. Local fallback result shown."
       };
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
       setSubmitted(true);
-      localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(resultPayload));
+      try { localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(resultPayload)); } catch { /* optional */ }
     }
   };
 
@@ -249,6 +261,7 @@ export default function QuizPage() {
   };
 
   const resetQuiz = () => {
+    setCompletionId(newEventId());
     setAnswersById({});
     setCurrentIndex(0);
     setSubmitted(false);
@@ -256,7 +269,7 @@ export default function QuizPage() {
     setAdaptiveError("");
     setApiResult(null);
     setApiError("");
-    localStorage.removeItem(RESULT_STORAGE_KEY);
+    try { localStorage.removeItem(RESULT_STORAGE_KEY); } catch { /* optional */ }
     setQuestions(STATIC_QUESTIONS);
   };
 

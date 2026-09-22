@@ -12,6 +12,15 @@
     "dev:api": "npm --workspace apps/api run dev",
     "dev": "npm run dev:api",
     "build:web": "npm --workspace apps/web run build",
+    "build:hosting": "npm run build:web && node scripts/build-hosting.mjs",
+    "dev:site": "npm run build:hosting && npm --workspace apps/api run start:site",
+    "test": "npm --workspace apps/api test && node --test tests/client.test.mjs",
+    "test:rules": "node --test tests/firestore.rules.test.mjs",
     "start:api": "npm --workspace apps/api run start"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.19.0",
+    "jsdom": "^30.0.1"
   }
 }

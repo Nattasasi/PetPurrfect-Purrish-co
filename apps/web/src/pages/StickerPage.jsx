@@ -5,6 +5,16 @@ import { composeStickerImage } from "../lib/stickerComposer";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
 import { generateStickerCaptions } from "../lib/apiClient";
 import ShareResultCard from "../components/share/ShareResultCard";
+import { trackEvent } from "../../../../js/ingestion-client.mjs";
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("We couldn't load the image. Please try again."));
+    image.src = url;
+  });
+}
 
 function capitalize(value) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
@@ -20,6 +30,8 @@ const DEBUG_STICKERS = [
 export default function StickerPage() {
   const inputRef = useRef(null);
   const stickerResultRef = useRef(null);
+  const generationRef = useRef(0);
+  const generatingRef = useRef(false);
   const [imageUrl, setImageUrl] = useInMemoryPageState("sticker.imageUrl", "");
   const [fileName, setFileName] = useInMemoryPageState("sticker.fileName", "");
   const [isGenerated, setIsGenerated] = useInMemoryPageState("sticker.isGenerated", false);
@@ -44,6 +56,9 @@ export default function StickerPage() {
     if (!file) {
       return;
     }
+    generationRef.current += 1;
+    generatingRef.current = false;
+    setIsAnalyzing(false);
 
     if (imageUrl.startsWith("blob:")) {
       URL.revokeObjectURL(imageUrl);
@@ -62,34 +77,30 @@ export default function StickerPage() {
   };
 
   const handleGenerateSticker = async () => {
-    if (!imageUrl) {
-      return;
-    }
-
-    const img = new Image();
-    img.onload = async () => {
-      setIsAnalyzing(true);
+    if (!imageUrl || generatingRef.current) return;
+    generatingRef.current = true;
+    const generation = ++generationRef.current;
+    setIsAnalyzing(true);
+    setAnalysisError("");
+    try {
+      const img = await loadImage(imageUrl);
       const inference = await runPetInference(img);
-      setAnalysisResult(inference);
-
+      if (generation !== generationRef.current) return;
       if (!inference?.validPet) {
-        setDetectedAttributes({});
-        setDebugImageUrl("");
-        setAnalysisError(inference?.reason || "Unable to analyze this image.");
-        setIsGenerated(false);
-        setIsAnalyzing(false);
-        return;
+        throw new Error(inference?.reason || "Unable to analyze this image.");
       }
-
       const debugPreview = createPetDebugImage(img, inference);
       const composedImage = composeStickerImage(inference.breed, inference.attributes);
-
+      // Asset selection alone isn't a completed output: wait for a usable image.
+      await loadImage(composedImage);
+      if (generation !== generationRef.current) return;
+      setAnalysisResult(inference);
       setDetectedAttributes(inference.attributes);
       setComposedStickerUrl(composedImage);
       setDebugImageUrl(debugPreview);
       setAnalysisError("");
       setIsGenerated(true);
-      setIsAnalyzing(false);
+      void trackEvent("sticker_generation");
 
       // Caption generation is non-blocking: the sticker is usable immediately,
       // and the local captions remain available if Ollama cannot be reached.
@@ -97,26 +108,31 @@ export default function StickerPage() {
       setCaptionsLoading(true);
       try {
         const captions = await generateStickerCaptions(inference.breed, inference.attributes);
-        if (captions.length > 0) {
+        if (generation === generationRef.current && captions.length > 0) {
           setShareCaptions(captions);
         }
       } catch {
         // ShareResultCard uses its supplied static caption when Ollama is unavailable.
       } finally {
-        setCaptionsLoading(false);
+        if (generation === generationRef.current) setCaptionsLoading(false);
       }
-    };
-
-    img.onerror = () => {
-      setAnalysisError("We couldn't read that image. Please upload another file.");
-      setIsGenerated(false);
-      setIsAnalyzing(false);
-    };
-
-    img.src = imageUrl;
+    } catch (error) {
+      if (generation === generationRef.current) {
+        setAnalysisError(error.message || "Sticker generation failed. Please try again.");
+        setIsGenerated(false);
+      }
+    } finally {
+      if (generation === generationRef.current) {
+        generatingRef.current = false;
+        setIsAnalyzing(false);
+      }
+    }
   };
 
   const showDebugSticker = async () => {
+    generationRef.current += 1;
+    generatingRef.current = false;
+    setIsAnalyzing(false);
     const debugSticker = DEBUG_STICKERS[Math.floor(Math.random() * DEBUG_STICKERS.length)];
     const attributes = {
       furColor: debugSticker.furColor,
@@ -157,6 +173,9 @@ export default function StickerPage() {
   };
 
   const resetUpload = () => {
+    generationRef.current += 1;
+    generatingRef.current = false;
+    setIsAnalyzing(false);
     if (imageUrl.startsWith("blob:")) {
       URL.revokeObjectURL(imageUrl);
     }

@@ -41,7 +41,7 @@ async function userIsAdmin(user) {
     const profileSnapshot = await getDoc(doc(db, "users", user.uid));
     return profileSnapshot.exists()
         && profileSnapshot.data().role === "admin"
-        && profileSnapshot.data().active !== false;
+        && profileSnapshot.data().active === true;
 }
 
 if (!firebaseConfigReady) {
@@ -104,4 +104,3 @@ document.getElementById("forgot-password").addEventListener("click", async () =>
         showMessage(friendlyAuthError(error));
     }
 });
-

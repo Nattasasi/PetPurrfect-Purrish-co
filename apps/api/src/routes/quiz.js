@@ -13,8 +13,16 @@ import {
 import { generateAdaptiveQuestions, getStaticQuestions } from "../services/quizQuestionService.js";
 import { fetchBreedImageUrl } from "../adapters/petImageApi.js";
 import { saveQuizResult } from "../services/quizResultRepository.js";
+import { validateQuizRequest } from "../middleware/validate.js";
+import { requireAdmin } from "../middleware/requireAdmin.js";
+import { recordEvent } from "../services/ingestionRepository.js";
 
 const router = Router();
+
+router.use("/debug", (req, res, next) => {
+  if (process.env.NODE_ENV === "production") return res.sendStatus(404);
+  next();
+});
 
 router.get("/questions/static", (_req, res) => {
   res.json({ questions: getStaticQuestions() });
@@ -83,9 +91,18 @@ router.post("/questions/adaptive", async (req, res) => {
   }
 });
 
-router.post("/evaluate", async (req, res) => {
+export function createQuizEvaluationHandler({ evaluate = evaluateQuiz, record = recordEvent } = {}) {
+  return async (req, res) => {
   try {
-    const result = await evaluateQuiz(req.body);
+    const result = await evaluate(req.body);
+    // Only this successful, validated execution path can write quiz events.
+    // Deterministic event ID prevents retries and concurrent requests adding totals.
+    try {
+      result.analytics = await record("quiz_completion", req.body.completionId);
+    } catch {
+      result.analytics = { recorded: false };
+      console.warn("Quiz analytics write unavailable");
+    }
     res.json(result);
   } catch (error) {
     res.status(500).json({
@@ -93,9 +110,11 @@ router.post("/evaluate", async (req, res) => {
       message: error?.message || "Unexpected server error"
     });
   }
-});
+  };
+}
+router.post("/evaluate", validateQuizRequest, createQuizEvaluationHandler());
 
-router.get("/results/recent", async (req, res) => {
+router.get("/results/recent", requireAdmin, async (req, res) => {
   try {
     const limit = req.query.limit;
     const result = await listRecentQuizResults(limit);
@@ -160,7 +179,7 @@ router.post("/landing", async (req, res) => {
 });
 
 // Share funnel analytics: shares and resulting landings per platform.
-router.get("/share/analytics", async (_req, res) => {
+router.get("/share/analytics", requireAdmin, async (_req, res) => {
   try {
     const analytics = await getShareAnalytics();
     res.json(analytics);

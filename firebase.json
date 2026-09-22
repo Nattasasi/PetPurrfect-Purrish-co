@@ -1,18 +1,35 @@
 {
   "firestore": {
-    "rules": "firestore.rules"
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   },
   "storage": {
     "rules": "storage.rules"
   },
+  "emulators": {
+    "firestore": { "host": "127.0.0.1", "port": 8085 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  },
   "hosting": {
-    "public": ".",
+    "public": "hosting",
+    "predeploy": ["npm run build:hosting"],
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
       "README-ADMIN-SETUP.md"
+    ],
+    "rewrites": [
+      { "source": "/api/**", "run": { "serviceId": "purrishco-api", "region": "asia-east1" } },
+      { "source": "/quiz", "destination": "/app.html" },
+      { "source": "/quiz/**", "destination": "/app.html" },
+      { "source": "/pet", "destination": "/app.html" },
+      { "source": "/about", "destination": "/app.html" },
+      { "source": "/contact", "destination": "/app.html" }
+    ],
+    "redirects": [
+      { "source": "/admin/share", "destination": "/admin/index.html", "type": 302 }
     ]
   }
 }
-
