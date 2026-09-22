@@ -7,8 +7,8 @@ import { BREED_LABELS } from "./breedLabels";
 // subpath, so the runtime is vendored under ./ort-runtime and imported as a
 // relative asset — this resolves correctly in both Vite dev and build.
 ort.env.wasm.wasmPaths = {
-  "ort-wasm-simd-threaded.wasm": ortWasmUrl,
-  "ort-wasm-simd-threaded.mjs": ortWasmMjsUrl
+  wasm: ortWasmUrl,
+  mjs: ortWasmMjsUrl
 };
 ort.env.wasm.numThreads = 1;
 

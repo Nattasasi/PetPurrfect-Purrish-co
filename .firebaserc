@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "purperfect-169de"
+  },
+  "targets": {
+    "purperfect-169de": {
+      "hosting": {
+        "customer": [
+          "purperfect-169de"
+        ],
+        "admin": [
+          "purperfect-admin"
+        ]
+      }
+    }
+  }
+}

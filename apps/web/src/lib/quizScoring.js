@@ -5,7 +5,7 @@ const TRAIT_KEYS = [
   "routine",
   "trainability"
 ];
-
+// remove this
 const PET_PROFILES = [
   {
     id: "golden_retriever",

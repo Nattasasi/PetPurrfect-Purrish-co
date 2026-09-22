@@ -1,4 +1,4 @@
-import { auth, db, storage, firebaseConfigReady } from "../../js/firebase-config.js";
+import { auth, db, storage, firebaseConfigReady } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 import {
     addDoc,

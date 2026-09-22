@@ -5,14 +5,32 @@
   "storage": {
     "rules": "storage.rules"
   },
-  "hosting": {
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**",
-      "README-ADMIN-SETUP.md"
-    ]
-  }
+  "hosting": [
+    {
+      "target": "customer",
+      "public": "apps/web/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**",
+        "README-ADMIN-SETUP.md"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "admin",
+      "public": "admin",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ]
+    }
+  ]
 }
 
