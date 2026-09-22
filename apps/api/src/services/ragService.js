@@ -3,6 +3,11 @@ import { fetchPetKnowledge } from "../adapters/externalPetApi.js";
 import { fetchBreedImageUrl } from "../adapters/petImageApi.js";
 import { env } from "../config/env.js";
 import { getKnowledgeBase, loadKnowledgeBase } from "./petKnowledgeBase.js";
+import {
+  getQuizProfiles,
+  getTopClusters,
+  rankBreedsInClusters
+} from "./breedProfileService.js";
 
 const TRAIT_KEYS = ["energy", "sociability", "independence", "routine", "trainability"];
 const OLLAMA_TIMEOUT_MS = 300000;
@@ -196,14 +201,31 @@ function cleanBreedNameForQuery(name, petType) {
 }
 
 export async function evaluateQuiz(payload = {}) {
-  const traits = payload.traits || {};
+  const suppliedTraits = payload.traits || {};
+  const traits = {
+    energy: suppliedTraits.energy ?? 0.5,
+    sociability: suppliedTraits.sociability ?? 0.5,
+    stranger_friendly: suppliedTraits.stranger_friendly ?? suppliedTraits.independence ?? 0.5,
+    routine: suppliedTraits.routine ?? 0.5,
+    trainability: suppliedTraits.trainability ?? 0.5
+  };
   const answers = payload.answers || [];
+  const profiles = await getQuizProfiles();
+  const candidateClusters = getTopClusters(traits, profiles.clusters, 3);
+  const finalQuestion = payload.discriminatorQuestion;
+  const finalAnswer = answers.find((answer) => answer.questionId === finalQuestion?.id);
+  const finalOption = finalQuestion?.options?.find((option) => option.value === finalAnswer?.value);
+  const finalTrait = finalQuestion?.discriminator?.trait;
+  if (finalTrait && finalOption?.traits?.[finalTrait] !== undefined) {
+    traits[finalTrait] = Number(finalOption.traits[finalTrait]);
+  }
 
-  // Retrieve: rank the known breed profiles locally (from Ninja API knowledge base),
-  // then look up the matched breed by name in the Ninja API to ground the summary in real breed facts.
-  const kb = await loadKnowledgeBase();
-  const ranked = rankCandidates(traits, kb);
-  const selected = ranked[0];
+  // Rank every breed in the retained candidate clusters. Question 10 narrows
+  // the result within those clusters instead of selecting a random member.
+  const ranked = rankBreedsInClusters(traits, candidateClusters, finalQuestion, profiles.breeds);
+  const kb = ranked.length > 0 ? ranked : await loadKnowledgeBase();
+  const rankedCandidates = ranked.length > 0 ? ranked : rankCandidates(traits, kb);
+  const selected = rankedCandidates[0];
   const queryName = cleanBreedNameForQuery(selected.name, selected.petType);
   const knowledge = await fetchPetKnowledge(queryName);
   // Ninja API does partial name matching, so prefer the exact breed match if present.
@@ -213,8 +235,8 @@ export async function evaluateQuiz(payload = {}) {
     null;
 
   const groundingCandidates = ninjaRecord
-    ? [{ ...selected, summary: ninjaRecord.summary }, ...ranked.slice(1, GROUNDING_CANDIDATE_COUNT)]
-    : ranked.slice(0, GROUNDING_CANDIDATE_COUNT);
+    ? [{ ...selected, summary: ninjaRecord.summary }, ...rankedCandidates.slice(1, GROUNDING_CANDIDATE_COUNT)]
+    : rankedCandidates.slice(0, GROUNDING_CANDIDATE_COUNT);
   const [groundedSummaryResult, personalitySummaryResult, shareCaptionsResult] = await Promise.all([
     generateGroundedSummary(traits, groundingCandidates),
     generatePersonalitySummary(traits, payload.topTraits || [], selected),
@@ -228,7 +250,7 @@ export async function evaluateQuiz(payload = {}) {
 
   const response = {
     provider: ninjaRecord ? `${knowledgeBaseSource}+ninja-api` : knowledgeBaseSource,
-    sourceCount: kb.length,
+    sourceCount: profiles.breedCount,
     match: {
       id: selected.id,
       name: selected.name,

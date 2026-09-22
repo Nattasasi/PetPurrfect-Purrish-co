@@ -1,7 +1,7 @@
 const TRAIT_KEYS = [
   "energy",
   "sociability",
-  "independence",
+  "stranger_friendly",
   "routine",
   "trainability"
 ];
@@ -88,14 +88,14 @@ function emptyTraitMap(seed = 0) {
   }, {});
 }
 
-export function scoreQuiz(questions, answersByQuestionId) {
+export function scoreQuiz(questions, answersByQuestionId, profileData = null) {
   const raw = emptyTraitMap(0);
   const maxAbs = emptyTraitMap(0);
 
   questions.forEach((question) => {
     TRAIT_KEYS.forEach((key) => {
       const optionMax = Math.max(
-        ...question.options.map((option) => Math.abs(option.traits?.[key] ?? 0)),
+        ...question.options.map((option) => Math.abs(option.traits?.[key] ?? option.traits?.independence ?? 0)),
         0
       );
       maxAbs[key] += optionMax;
@@ -111,7 +111,7 @@ export function scoreQuiz(questions, answersByQuestionId) {
     }
 
     TRAIT_KEYS.forEach((key) => {
-      raw[key] += selectedOption.traits?.[key] ?? 0;
+      raw[key] += selectedOption.traits?.[key] ?? selectedOption.traits?.independence ?? 0;
     });
   });
 
@@ -122,7 +122,7 @@ export function scoreQuiz(questions, answersByQuestionId) {
     normalized[key] = Math.min(1, Math.max(0, Number(value.toFixed(3))));
   });
 
-  const recommendation = recommendPet(normalized);
+  const recommendation = recommendPet(normalized, profileData);
 
   const topTraits = [...TRAIT_KEYS]
     .sort((a, b) => normalized[b] - normalized[a])
@@ -137,12 +137,34 @@ export function scoreQuiz(questions, answersByQuestionId) {
   };
 }
 
-export function recommendPet(normalizedTraits) {
+export function recommendPet(normalizedTraits, profileData = null) {
+  const dynamicBreeds = profileData?.breeds;
+  if (Array.isArray(dynamicBreeds) && dynamicBreeds.length > 0) {
+    let best = null;
+    dynamicBreeds.forEach((profile) => {
+      const distance = TRAIT_KEYS.reduce((sum, key) => {
+        const target = profile.traits?.[key] ?? 0.5;
+        const difference = (normalizedTraits[key] ?? 0.5) - target;
+        return sum + difference * difference;
+      }, 0);
+      const confidence = Math.max(0, 1 - Math.sqrt(distance) / Math.sqrt(TRAIT_KEYS.length));
+      if (!best || distance < best.distance) {
+        best = {
+          ...profile,
+          confidence: Number(confidence.toFixed(3)),
+          distance
+        };
+      }
+    });
+    return best;
+  }
+
   let best = null;
 
   PET_PROFILES.forEach((profile) => {
     const distance = TRAIT_KEYS.reduce((sum, key) => {
-      return sum + Math.abs((normalizedTraits[key] ?? 0.5) - profile.target[key]);
+      const target = profile.target[key] ?? profile.target.independence ?? 0.5;
+      return sum + Math.abs((normalizedTraits[key] ?? 0.5) - target);
     }, 0);
 
     const maxDistance = TRAIT_KEYS.length;

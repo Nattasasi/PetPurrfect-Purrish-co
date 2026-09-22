@@ -13,11 +13,49 @@ import {
 import { generateAdaptiveQuestions, getStaticQuestions } from "../services/quizQuestionService.js";
 import { fetchBreedImageUrl } from "../adapters/petImageApi.js";
 import { saveQuizResult } from "../services/quizResultRepository.js";
+import {
+  getQuizProfiles,
+  getTopClusters,
+  buildDiscriminatorQuestion
+} from "../services/breedProfileService.js";
 
 const router = Router();
 
 router.get("/questions/static", (_req, res) => {
   res.json({ questions: getStaticQuestions() });
+});
+
+// NEW: Endpoint to get all 486 breeds organized into clusters
+// Used by frontend to load breed profiles and perform cluster-based matching
+router.get("/profiles", async (req, res) => {
+  try {
+    const data = await getQuizProfiles();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({
+      error: "breed_profiles_failed",
+      message: error?.message || "Failed to load breed profiles"
+    });
+  }
+});
+
+router.post("/discriminator-question", async (req, res) => {
+  try {
+    const profiles = await getQuizProfiles();
+    const traits = req.body?.traits || {};
+    const candidateClusters = getTopClusters(traits, profiles.clusters, 3);
+    const question = buildDiscriminatorQuestion(traits, candidateClusters, profiles.breeds);
+    if (!question) {
+      res.status(422).json({ error: "discriminator_question_unavailable" });
+      return;
+    }
+    res.json({ question, candidateClusterIds: candidateClusters.map((cluster) => cluster.representative?.id) });
+  } catch (error) {
+    res.status(500).json({
+      error: "discriminator_question_failed",
+      message: error?.message || "Failed to generate the final quiz question"
+    });
+  }
 });
 
 // Used by the frontend's dev-only debug result generator to preview a real

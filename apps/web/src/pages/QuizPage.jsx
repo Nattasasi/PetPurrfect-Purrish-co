@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import staticQuizQuestions from "../data/quizQuestions.json";
 import { scoreQuiz } from "../lib/quizScoring";
-import { postJson, createSessionId } from "../lib/apiClient";
+import { postJson, getJson, createSessionId } from "../lib/apiClient";
 import { getPetImageById, resolvePetImageUrl } from "../lib/petImages";
 import { exportQuizResultImage, createQuizResultImageFile } from "../lib/shareImage";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
@@ -69,6 +69,13 @@ export default function QuizPage() {
   const [apiResult, setApiResult] = useInMemoryPageState("quiz.apiResult", null);
   const [apiError, setApiError] = useInMemoryPageState("quiz.apiError", "");
   const [showExplanation, setShowExplanation] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+
+  useEffect(() => {
+    getJson("/api/quiz/profiles")
+      .then(setProfileData)
+      .catch(() => setProfileData(null));
+  }, []);
 
   const currentQuestion = questions[currentIndex];
   const selectedValue = answersById[currentQuestion.id] ?? "";
@@ -76,7 +83,7 @@ export default function QuizPage() {
   // Question 5 and each later question load the next adaptive question on demand.
   const isLastStaticQuestion = currentIndex === STATIC_QUESTION_COUNT - 1 && questions.length === STATIC_QUESTION_COUNT;
 
-  const scoring = useMemo(() => scoreQuiz(questions, answersById), [questions, answersById]);
+  const scoring = useMemo(() => scoreQuiz(questions, answersById, profileData), [questions, answersById, profileData]);
 
   const displayResult = useMemo(() => {
     if (apiResult?.match) {
@@ -114,6 +121,19 @@ export default function QuizPage() {
     setAdaptiveLoading(true);
     setAdaptiveError("");
     try {
+      if (questions.length === 9) {
+        const discriminatorTraits = scoreQuiz(questions, staticAnswersById, profileData).normalized;
+        const result = await postJson("/api/quiz/discriminator-question", {
+          sessionId,
+          traits: discriminatorTraits
+        });
+        if (!result.question || !Array.isArray(result.question.options) || result.question.options.length !== 4) {
+          throw new Error("The final matching question was invalid.");
+        }
+        setQuestions([...questions, result.question]);
+        return true;
+      }
+
       const staticAnswers = STATIC_QUESTIONS.map((question) => ({
         questionId: question.id,
         value: staticAnswersById[question.id]
@@ -144,7 +164,7 @@ export default function QuizPage() {
   };
 
   const submitAnswers = async (answersMap, questionsForScoring = questions) => {
-    const computedScoring = scoreQuiz(questionsForScoring, answersMap);
+    const computedScoring = scoreQuiz(questionsForScoring, answersMap, profileData);
     const answers = questionsForScoring.map((question) => ({
       questionId: question.id,
       value: answersMap[question.id]
@@ -174,7 +194,8 @@ export default function QuizPage() {
         answers,
         questionCount: questionsForScoring.length,
         traits: computedScoring.normalized,
-        topTraits: computedScoring.topTraits
+        topTraits: computedScoring.topTraits,
+        discriminatorQuestion: questionsForScoring.find((question) => question.id === "adaptive-q10") || null
       });
 
 
@@ -278,7 +299,7 @@ export default function QuizPage() {
     const debugAnswersById = Object.fromEntries(
       debugAnswers.map((answer) => [answer.questionId, answer.value])
     );
-    const computedScoring = scoreQuiz(questions, debugAnswersById);
+    const computedScoring = scoreQuiz(questions, debugAnswersById, profileData);
 
     try {
       const result = await postJson("/api/quiz/evaluate", {
