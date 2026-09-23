@@ -12,6 +12,13 @@ const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const STATIC_QUESTION_COUNT = 5;
 const ADAPTIVE_QUESTION_COUNT = 5;
 const TOTAL_QUESTION_COUNT = STATIC_QUESTION_COUNT + ADAPTIVE_QUESTION_COUNT;
+const TRAIT_SHORT_LABELS = {
+  energy: "E",
+  sociability: "S",
+  stranger_friendly: "F",
+  routine: "R",
+  trainability: "T"
+};
 const DEBUG_MATCHES = [
   { id: "golden_retriever", name: "Golden Retriever", petType: "dog", summary: "Friendly, social, and well-suited to active owners." },
   { id: "labrador_retriever", name: "Labrador Retriever", petType: "dog", summary: "Warm, upbeat, and happiest when life is active and social." },
@@ -51,6 +58,13 @@ function shuffleOptions(options) {
   return shuffled;
 }
 
+function formatOptionScore(option) {
+  return Object.entries(option.traits || {})
+    .filter(([trait]) => TRAIT_SHORT_LABELS[trait])
+    .map(([trait, value]) => `${TRAIT_SHORT_LABELS[trait]} ${value >= 0 ? "+" : ""}${value}`)
+    .join(" · ");
+}
+
 const STATIC_QUESTIONS = staticQuizQuestions
   .slice(0, STATIC_QUESTION_COUNT)
   .map((question) => ({ ...question, options: shuffleOptions(question.options) }));
@@ -69,6 +83,7 @@ export default function QuizPage() {
   const [apiResult, setApiResult] = useInMemoryPageState("quiz.apiResult", null);
   const [apiError, setApiError] = useInMemoryPageState("quiz.apiError", "");
   const [showExplanation, setShowExplanation] = useState(false);
+  const [debugScoreBreakdown, setDebugScoreBreakdown] = useState(null);
   const [profileData, setProfileData] = useState(null);
 
   useEffect(() => {
@@ -289,6 +304,7 @@ export default function QuizPage() {
     setApiError("");
     localStorage.removeItem(RESULT_STORAGE_KEY);
     setQuestions(STATIC_QUESTIONS);
+    setDebugScoreBreakdown(null);
   };
 
   const showDebugResult = async () => {
@@ -300,6 +316,12 @@ export default function QuizPage() {
       debugAnswers.map((answer) => [answer.questionId, answer.value])
     );
     const computedScoring = scoreQuiz(questions, debugAnswersById, profileData);
+    setDebugScoreBreakdown({
+      raw: computedScoring.raw,
+      normalized: computedScoring.normalized,
+      topTraits: computedScoring.topTraits,
+      answers: debugAnswers
+    });
 
     try {
       const result = await postJson("/api/quiz/evaluate", {
@@ -405,6 +427,37 @@ export default function QuizPage() {
                 <p className="quiz-hint result-traits">{displayResult.summary}</p>
               )}
               {apiError && <p className="quiz-error">{apiError}</p>}
+              {import.meta.env.DEV && debugScoreBreakdown && (
+                <section className="quiz-debug-breakdown" aria-label="Debug score breakdown">
+                  <h4>Score Breakdown</h4>
+                  <div className="quiz-debug-grid">
+                    <div>
+                      <p className="quiz-debug-label">Raw Traits</p>
+                      <ul className="quiz-debug-list">
+                        {Object.entries(debugScoreBreakdown.raw).map(([trait, value]) => (
+                          <li key={trait}><strong>{trait}</strong>: {value}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="quiz-debug-label">Normalized Traits</p>
+                      <ul className="quiz-debug-list">
+                        {Object.entries(debugScoreBreakdown.normalized).map(([trait, value]) => (
+                          <li key={trait}><strong>{trait}</strong>: {value}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="quiz-debug-label">Top Traits</p>
+                    <ul className="quiz-debug-list quiz-debug-list--compact">
+                      {debugScoreBreakdown.topTraits.map((trait) => (
+                        <li key={trait.key}><strong>{trait.key}</strong>: {trait.value}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </section>
+              )}
               <div className="quiz-buttons">
                 <button className="btn btn-outline" type="button" onClick={resetQuiz}>
                   <i className="fas fa-rotate-left" aria-hidden="true" /> Retake Quiz
@@ -441,7 +494,12 @@ export default function QuizPage() {
                   aria-pressed={selectedValue === option.value}
                   disabled={adaptiveLoading || isSubmitting}
                 >
-                  {option.label}
+                  <span className="option-label-text">{option.label}</span>
+                  {import.meta.env.DEV && (
+                    <span className="option-score-text" aria-label={`Option score ${formatOptionScore(option)}`}>
+                      {formatOptionScore(option)}
+                    </span>
+                  )}
                 </button>
               ))}
               {touched && !selectedValue && <p className="quiz-hint">Please select an answer before continuing.</p>}
