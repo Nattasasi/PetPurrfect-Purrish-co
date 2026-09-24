@@ -39,7 +39,11 @@ ${describeAnsweredSoFar(answeredSoFar)}
 
 ${previousQuestionContext}
 
-Generate exactly ${questionCount} new question object${questionCount === 1 ? "" : "s"} in this exact JSON shape: {"questions":[{"text":"...","options":[{"value":"a","label":"...","traits":{"energy":0,"sociability":0,"stranger_friendly":0,"routine":0,"trainability":0}}]}]}. Ask about the user's routines, reactions, priorities, social situations, decisions, preferences, or imaginative everyday scenarios. Never ask about breeds, species, animals, pets, pet ownership, grooming, feeding, training, animal behavior, or knowledge of animal care. Do not mention dogs, cats, or any other animal anywhere in question text or option labels. Prioritize surprising, varied, and memorable questions over precise matching accuracy. Every question must test a distinct scenario; do not repeat the same scenario, wording, or underlying choice. Each question needs exactly 4 options, and each option needs trait numbers from -2 to 2 for energy, sociability, stranger_friendly, routine, and trainability. Output only raw JSON.`;
+Generate exactly ${questionCount} new question object${questionCount === 1 ? "" : "s"} in this exact JSON shape: {"questions":[{"text":"...","options":[{"value":"a","label":"...","traits":{"energy":0,"sociability":0,"stranger_friendly":0,"routine":0,"trainability":0}}]}]}.
+
+CRITICAL: The question text must NOT contain the options. Do NOT use "A)", "B)", "C)", "D)" or any list format in the question text. Options MUST be separate JSON objects in the options array, not embedded in the question.
+
+Ask about the user's routines, reactions, priorities, social situations, decisions, preferences, or imaginative everyday scenarios. Never ask about breeds, species, animals, pets, pet ownership, grooming, feeding, training, animal behavior, or knowledge of animal care. Do not mention dogs, cats, or any other animal anywhere in question text or option labels. Prioritize surprising, varied, and memorable questions over precise matching accuracy. Every question must test a distinct scenario; do not repeat the same scenario, wording, or underlying choice. Each question needs exactly 4 options, and each option needs trait numbers from -2 to 2 for energy, sociability, stranger_friendly, routine, and trainability. Output only raw JSON.`;
 }
 
 async function callOllama(prompt) {
@@ -100,12 +104,17 @@ function containsAnimalReference(text) {
   return /\b(animal|animals|pet|pets|dog|dogs|cat|cats|breed|breeds|puppy|kitten|groom|grooming|feed|feeding|train|training|vet|veterinarian)\b/i.test(text);
 }
 
+function hasEmbeddedOptions(text) {
+  return /^\s*[A-D]\s*[):.]/m.test(text) || /\n\s*[A-D]\s*[):.]\s/m.test(text);
+}
+
 function validateQuestions(rawQuestions, questionCount, questionOffset) {
   if (!Array.isArray(rawQuestions) || rawQuestions.length !== questionCount) throw new Error("invalid_question_count");
   const seenQuestionTexts = new Set();
   return rawQuestions.map((question, questionIndex) => {
     const questionText = question?.text || question?.question || question?.prompt;
     if (!question || typeof questionText !== "string" || !questionText.trim()) throw new Error("invalid_question_text");
+    if (hasEmbeddedOptions(questionText)) throw new Error("embedded_options_in_question_text");
     if (!Array.isArray(question.options) || question.options.length !== 4) throw new Error("invalid_question_options");
     const normalizedText = normalizeQuestionText(questionText);
     if (seenQuestionTexts.has(normalizedText)) throw new Error("duplicate_question_text");
