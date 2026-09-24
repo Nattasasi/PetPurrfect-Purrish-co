@@ -21,6 +21,7 @@ for (const file of [
 await copy("apps/web/dist/index.html", "app.html");
 await copy("apps/web/dist/assets", "assets");
 await copy("apps/web/dist/pet_stickers", "pet_stickers");
+await copy("apps/web/public/business_assets", "business_assets");
 await mkdir(path.join(output, "models"), { recursive: true });
 await copy("apps/web/dist/models/breed_classifier.onnx", "models/breed_classifier.onnx");
 console.log("Prepared hosting/: static site, admin, React routes, and browser assets only.");
