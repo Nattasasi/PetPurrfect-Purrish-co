@@ -15,6 +15,7 @@ const app = express();
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || [
   "https://purperfect-169de.web.app", "https://purperfect-169de.firebaseapp.com",
+  "https://pet-purrfect.site", "https://purrishandco.com", "https://www.purrishandco.com",
   ...(process.env.NODE_ENV !== "production" ? [
     "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3001", "http://127.0.0.1:3001",
     "http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:8000", "http://127.0.0.1:8000"

@@ -2,7 +2,10 @@
 // belong in analytics payloads. Production requests stay on the Hosting origin.
 const localStatic = ["localhost", "127.0.0.1"].includes(globalThis.location?.hostname)
   && ["5500", "8000"].includes(globalThis.location?.port);
-export const API_BASE = localStatic ? "http://localhost:3001" : "";
+// Firebase Hosting has no /api rewrite, so relative fetches would hit the SPA
+// shell instead of the API. Point production traffic at the deployed API directly.
+const PRODUCTION_API_BASE = "https://purrishcoapi-production.up.railway.app";
+export const API_BASE = localStatic ? "http://localhost:3001" : (import.meta.env?.VITE_API_BASE_URL || PRODUCTION_API_BASE);
 
 export function newEventId() {
   return crypto.randomUUID();
