@@ -20,10 +20,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || [
     "http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:8000", "http://127.0.0.1:8000"
   ] : [])
 ].join(",")).split(",").map((origin) => origin.trim()).filter(Boolean);
-<<<<<<< HEAD
 
-=======
->>>>>>> firebase-ingestion-dashboard
 // Leave proxy trust off by default: arbitrary X-Forwarded-For must not bypass limits.
 app.use("/api", originGuard(allowedOrigins));
 app.use(cors({ origin: allowedOrigins }));

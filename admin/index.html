@@ -24,6 +24,7 @@
         <p class="sidebar-label">Admin workspace</p>
         <nav class="sidebar-nav" aria-label="Admin navigation">
             <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-table-cells-large"></i><span>Dashboard</span></button>
+            <button class="nav-item" data-view="engagement"><i class="fa-solid fa-chart-line"></i><span>Engagement</span></button>
             <button class="nav-item" data-view="messages"><i class="fa-solid fa-envelope"></i><span>Messages</span><b id="message-badge" class="nav-badge hidden">0</b></button>
         </nav>
         <div class="sidebar-footer">
@@ -78,6 +79,45 @@
                 <article class="metric-card"><div class="metric-icon"><i class="fa-solid fa-clipboard-check"></i></div><div><span>Quiz Completions</span><p id="metric-quiz">Loading…</p></div></article>
                 <article class="metric-card"><div class="metric-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div><span>Sticker Generations</span><p id="metric-stickers">Loading…</p></div></article>
                 <article class="metric-card"><div class="metric-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div><div><span>Shop Redirect Clicks</span><p id="metric-redirects">Loading…</p></div></article>
+            </div>
+        </section>
+
+        <section class="admin-view" id="view-engagement">
+            <div class="welcome-banner">
+                <div><span class="eyebrow">Quiz &amp; sticker funnel</span>
+                    <h2>Engagement</h2>
+                    <p>How visitors move from viewing the quiz to sharing their result.</p>
+                </div>
+            </div>
+            <div class="section-toolbar">
+                <label for="engagement-range">Activity period</label>
+                <select id="engagement-range" class="select-control"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option></select>
+                <button id="engagement-refresh" class="secondary-button">Refresh totals</button>
+            </div>
+            <p id="engagement-status" role="status" aria-live="polite">Loading activity…</p>
+
+            <div class="metric-grid" aria-live="polite">
+                <article class="metric-card"><div class="metric-icon"><i class="fa-solid fa-user-group"></i></div><div><span>Unique Sessions</span><p id="metric-sessions">Loading…</p></div></article>
+                <article class="metric-card"><div class="metric-icon"><i class="fa-solid fa-layer-group"></i></div><div><span>Avg Events / Session</span><p id="metric-avg-events">Loading…</p></div></article>
+            </div>
+
+            <div class="engagement-panels">
+                <div class="panel-card">
+                    <h3>Conversion funnel</h3>
+                    <div id="funnel-chart" class="funnel-chart" aria-live="polite"></div>
+                </div>
+                <div class="panel-card">
+                    <h3>Devices</h3>
+                    <div id="breakdown-devices" class="breakdown-list" aria-live="polite"></div>
+                </div>
+                <div class="panel-card">
+                    <h3>Browsers</h3>
+                    <div id="breakdown-browsers" class="breakdown-list" aria-live="polite"></div>
+                </div>
+                <div class="panel-card">
+                    <h3>Operating systems</h3>
+                    <div id="breakdown-os" class="breakdown-list" aria-live="polite"></div>
+                </div>
             </div>
         </section>
 

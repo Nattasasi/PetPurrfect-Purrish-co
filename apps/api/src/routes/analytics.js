@@ -6,6 +6,7 @@ import {
   getDeviceMetrics,
   getSessionMetrics
 } from "../services/analyticsRepository.js";
+import { requireAdmin } from "../middleware/requireAdmin.js";
 
 const router = Router();
 
@@ -39,7 +40,7 @@ router.post("/events", async (req, res) => {
  * GET /api/analytics/events/:eventType
  * Get all events of a specific type
  */
-router.get("/events/:eventType", async (req, res) => {
+router.get("/events/:eventType", requireAdmin, async (req, res) => {
   try {
     const eventType = req.params.eventType;
     const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
@@ -60,7 +61,7 @@ router.get("/events/:eventType", async (req, res) => {
  * GET /api/analytics/funnel
  * Get funnel conversion metrics (view → start → complete → share)
  */
-router.get("/funnel", async (req, res) => {
+router.get("/funnel", requireAdmin, async (req, res) => {
   try {
     const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
     const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
@@ -80,7 +81,7 @@ router.get("/funnel", async (req, res) => {
  * GET /api/analytics/devices
  * Get device, browser, and OS breakdown
  */
-router.get("/devices", async (req, res) => {
+router.get("/devices", requireAdmin, async (req, res) => {
   try {
     const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
     const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
@@ -102,7 +103,7 @@ router.get("/devices", async (req, res) => {
  * GET /api/analytics/sessions
  * Get session-based metrics
  */
-router.get("/sessions", async (req, res) => {
+router.get("/sessions", requireAdmin, async (req, res) => {
   try {
     const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
     const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
@@ -123,7 +124,7 @@ router.get("/sessions", async (req, res) => {
  * GET /api/analytics/overview
  * Get all analytics at once (funnel, device, session metrics)
  */
-router.get("/overview", async (req, res) => {
+router.get("/overview", requireAdmin, async (req, res) => {
   try {
     const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
     const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
