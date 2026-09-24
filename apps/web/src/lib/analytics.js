@@ -104,7 +104,10 @@ export function buildEventPayload(eventType, properties = {}) {
 export async function trackEvent(eventType, properties = {}) {
   try {
     const payload = buildEventPayload(eventType, properties);
-    await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:3001"}/api/analytics/events`, {
+    // Relative path (matches apiClient.js) so Firebase Hosting's /api rewrite
+    // reaches the production API even when VITE_API_BASE_URL isn't set at build
+    // time. A localhost fallback here would silently break tracking in prod.
+    await fetch(`${import.meta.env.VITE_API_BASE_URL || ""}/api/analytics/events`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
