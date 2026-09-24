@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 export async function postJson(path, payload) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -115,4 +115,3 @@ export async function getDebugBreedImage(breed, petType) {
 export async function saveDebugQuizResult(payload) {
   return postJson("/api/quiz/debug/save-result", payload);
 }
-

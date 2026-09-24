@@ -84,16 +84,12 @@ document.querySelectorAll(".product-card button")
 
 
 
-const form = document.querySelector("form");
-
-if (form) {
-
-    form.addEventListener("submit", (e) => {
-
-        e.preventDefault();
-
-        alert("Message sent successfully!");
-
-    });
-
-}
+// Customer tracking and contact submission share one implementation with React.
+import("./ingestion-client.mjs").then(({ startCustomerTracking, connectContactForm }) => {
+    startCustomerTracking();
+    const form = document.querySelector("#contact-form");
+    if (form) connectContactForm(form);
+}).catch(() => {
+    const status = document.querySelector('#contact-form [role="status"]');
+    if (status) status.textContent = "Contact service could not load. Please reload and try again.";
+});

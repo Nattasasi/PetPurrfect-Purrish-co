@@ -98,33 +98,44 @@ Have questions or suggestions? We'd love to hear from you!
 
 <h2>Send Us a Message</h2>
 
-<form>
+<form id="contact-form">
 
 <input
+name="name"
+aria-label="Full name"
+minlength="2"
+maxlength="100"
 type="text"
 placeholder="Full Name"
 required>
 
 <input
+name="email"
+aria-label="Email address"
+maxlength="150"
 type="email"
 placeholder="Email Address"
 required>
 
 <input
+name="subject"
+aria-label="Subject"
+maxlength="150"
 type="text"
 placeholder="Subject">
 
-<textarea
+<textarea name="message" aria-label="Message" maxlength="2000" required
 rows="6"
 placeholder="Your Message"></textarea>
 
-<button
+<button type="submit" disabled
 class="btn btn-primary">
 
 Send Message
 
 </button>
 
+<p role="status" aria-live="polite"></p>
 </form>
 
 </div>

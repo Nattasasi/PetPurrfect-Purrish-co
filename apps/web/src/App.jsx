@@ -5,10 +5,12 @@ import QuizPage from "./pages/QuizPage";
 import QuizResultPage from "./pages/QuizResultPage";
 import StickerPage from "./pages/StickerPage";
 import ContactPage from "./pages/ContactPage";
-import ShareAnalyticsPage from "./pages/ShareAnalyticsPage";
+import { startCustomerTracking } from "../../../js/ingestion-client.mjs";
 
 export default function App() {
   const location = useLocation();
+
+  useEffect(() => startCustomerTracking(), [location.pathname]);
 
   useEffect(() => {
     const navbar = document.querySelector(".navbar");
@@ -57,25 +59,12 @@ export default function App() {
       buttonHandlers.push({ button, handler });
     });
 
-    const form = document.querySelector("form");
-    let formHandler = null;
-    if (form) {
-      formHandler = (e) => {
-        e.preventDefault();
-        alert("Message sent successfully!");
-      };
-      form.addEventListener("submit", formHandler);
-    }
-
     return () => {
       window.removeEventListener("scroll", onScroll);
       observer.disconnect();
       buttonHandlers.forEach(({ button, handler }) => {
         button.removeEventListener("click", handler);
       });
-      if (form && formHandler) {
-        form.removeEventListener("submit", formHandler);
-      }
     };
   }, [location.pathname]);
 
@@ -124,7 +113,7 @@ export default function App() {
           <Route path="/quiz/result" element={<QuizResultPage />} />
           <Route path="/quiz/result/:id" element={<QuizResultPage />} />
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/admin/share" element={<ShareAnalyticsPage />} />
+          <Route path="/admin/share" element={<a href="/admin/index.html">Open the admin dashboard</a>} />
         </Routes>
       </main>
 

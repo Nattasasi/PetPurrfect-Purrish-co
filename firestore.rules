@@ -14,10 +14,7 @@ service cloud.firestore {
     function isAdmin() {
       return hasAdminProfile()
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-        && (
-          !('active' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data)
-          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true
-        );
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
     }
 
     match /products/{productId} {
@@ -59,28 +56,15 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      allow create: if request.resource.data.keys().hasAll([
-          'name', 'email', 'subject', 'message', 'status', 'source', 'createdAt'
-        ])
-        && request.resource.data.keys().hasOnly([
-          'name', 'email', 'subject', 'message', 'status', 'source', 'createdAt'
-        ])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() >= 2
-        && request.resource.data.name.size() <= 100
-        && request.resource.data.email is string
-        && request.resource.data.email.size() >= 5
-        && request.resource.data.email.size() <= 150
-        && request.resource.data.subject is string
-        && request.resource.data.subject.size() <= 150
-        && request.resource.data.message is string
-        && request.resource.data.message.size() >= 1
-        && request.resource.data.message.size() <= 2000
-        && request.resource.data.status == 'unread'
-        && request.resource.data.source == 'contact-page'
-        && request.resource.data.createdAt == request.time;
-
+      // Anonymous creation goes through /api/messages, which enforces the same
+      // field names/lengths, server time, idempotency, and request limits.
+      allow create: if false;
       allow read, update, delete: if isAdmin();
+    }
+
+    match /analytics_events/{eventId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /{document=**} {
@@ -88,4 +72,3 @@ service cloud.firestore {
     }
   }
 }
-
