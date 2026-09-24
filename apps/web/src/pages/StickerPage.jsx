@@ -200,7 +200,7 @@ export default function StickerPage() {
   };
 
   const petDescriptor = analysisResult?.validPet
-    ? `${analysisResult.breed}${matchedPreset ? ` · ${matchedPreset.name}` : ""} · ${detectedAttributes.faceShape || "round"} face`
+    ? analysisResult.breed
     : "Upload a cat or dog photo to begin analysis";
 
   const stickerShareCaption = analysisResult?.validPet
@@ -347,8 +347,6 @@ export default function StickerPage() {
                 shareText={stickerShareCaption}
                 shareCaptions={shareCaptions}
                 captionsLoading={captionsLoading}
-                onDownload={handleDownload}
-                getShareFile={getShareFile}
                 crossPromoText="Want to discover your pet personality and unlock a themed version?"
                 crossPromoPath="/quiz"
               />

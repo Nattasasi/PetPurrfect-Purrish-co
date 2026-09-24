@@ -1,135 +1,135 @@
 [
   {
     "id": "q1",
-    "text": "How do you usually spend your weekends?",
+    "text": "You suddenly have a free weekend with no fixed plans. What sounds most like you?",
     "type": "single",
     "options": [
       {
         "value": "home_relax",
-        "label": "Relaxing at home",
+        "label": "A quiet reset at home with a favorite hobby",
         "traits": { "energy": -1, "sociability": -1, "stranger_friendly": 1, "routine": 1, "trainability": 0 }
       },
       {
         "value": "outdoors",
-        "label": "Going outdoors",
+        "label": "Getting outside for an active adventure",
         "traits": { "energy": 2, "sociability": 0, "stranger_friendly": 0, "routine": 0, "trainability": 1 }
       },
       {
         "value": "travel",
-        "label": "Traveling",
+        "label": "Exploring somewhere new on a spontaneous trip",
         "traits": { "energy": 1, "sociability": 1, "stranger_friendly": 1, "routine": -1, "trainability": 0 }
       },
       {
         "value": "social",
-        "label": "Hanging out with friends",
+        "label": "Organizing a lively plan with friends",
         "traits": { "energy": 1, "sociability": 2, "stranger_friendly": -1, "routine": 0, "trainability": 0 }
       }
     ]
   },
   {
     "id": "q2",
-    "text": "Your ideal home is...",
+    "text": "Picture the home where you would feel most comfortable after a busy day. What is it like?",
     "type": "single",
     "options": [
       {
         "value": "studio",
-        "label": "A compact apartment",
+        "label": "A cozy, compact space that is easy to keep calm",
         "traits": { "energy": -1, "sociability": 0, "stranger_friendly": 1, "routine": 1, "trainability": 0 }
       },
       {
         "value": "suburban",
-        "label": "A suburban house",
+        "label": "A practical home with room for familiar routines",
         "traits": { "energy": 1, "sociability": 0, "stranger_friendly": 0, "routine": 1, "trainability": 1 }
       },
       {
         "value": "farm",
-        "label": "A large place with outdoor space",
+        "label": "A spacious place with plenty of room to move around",
         "traits": { "energy": 2, "sociability": 0, "stranger_friendly": 1, "routine": 0, "trainability": 1 }
       },
       {
         "value": "flexible",
-        "label": "I can adapt to any space",
+        "label": "A flexible space that can change with my needs",
         "traits": { "energy": 0, "sociability": 1, "stranger_friendly": 1, "routine": -1, "trainability": 0 }
       }
     ]
   },
   {
     "id": "q3",
-    "text": "How active are you during weekdays?",
+    "text": "After a full weekday of work or study, how does your energy usually show up?",
     "type": "single",
     "options": [
       {
         "value": "low",
-        "label": "Mostly low activity",
+        "label": "I prefer gentle plans and plenty of recovery time",
         "traits": { "energy": -2, "sociability": 0, "stranger_friendly": 1, "routine": 1, "trainability": 0 }
       },
       {
         "value": "moderate",
-        "label": "Balanced activity",
+        "label": "I mix productive time with moderate activity",
         "traits": { "energy": 0, "sociability": 0, "stranger_friendly": 0, "routine": 1, "trainability": 1 }
       },
       {
         "value": "high",
-        "label": "Very active",
+        "label": "I look for a workout, project, or adventure",
         "traits": { "energy": 2, "sociability": 1, "stranger_friendly": 0, "routine": 0, "trainability": 1 }
       },
       {
         "value": "varied",
-        "label": "Changes every day",
+        "label": "It depends on the day; my energy is hard to predict",
         "traits": { "energy": 1, "sociability": 1, "stranger_friendly": 1, "routine": -2, "trainability": -1 }
       }
     ]
   },
   {
     "id": "q4",
-    "text": "How social are you with new people?",
+    "text": "At a gathering where you know only one person, what do you naturally do?",
     "type": "single",
     "options": [
       {
         "value": "reserved",
-        "label": "Quite reserved",
+        "label": "Stay close to what feels familiar and observe first",
         "traits": { "energy": -1, "sociability": -2, "stranger_friendly": 1, "routine": 1, "trainability": 0 }
       },
       {
         "value": "warmup",
-        "label": "Warm up slowly",
+        "label": "Have one thoughtful conversation, then open up gradually",
         "traits": { "energy": 0, "sociability": -1, "stranger_friendly": 1, "routine": 1, "trainability": 1 }
       },
       {
         "value": "friendly",
-        "label": "Generally friendly",
+        "label": "Introduce myself when a natural opportunity appears",
         "traits": { "energy": 1, "sociability": 1, "stranger_friendly": 0, "routine": 0, "trainability": 1 }
       },
       {
         "value": "outgoing",
-        "label": "Very outgoing",
+        "label": "Move around confidently and start conversations with anyone",
         "traits": { "energy": 1, "sociability": 2, "stranger_friendly": -1, "routine": -1, "trainability": 0 }
       }
     ]
   },
   {
     "id": "q5",
-    "text": "When a small routine task keeps coming back, how do you respond?",
+    "text": "A small responsibility keeps returning every week. Which response feels most natural?",
     "type": "single",
     "options": [
       {
         "value": "minimal",
-        "label": "I do the minimum and move on",
+        "label": "Finish only what is necessary and spend my energy elsewhere",
         "traits": { "energy": 0, "sociability": 0, "stranger_friendly": 1, "routine": -1, "trainability": -1 }
       },
       {
         "value": "weekly",
-        "label": "I set a simple routine for it",
+        "label": "Set a simple recurring routine so it stays manageable",
         "traits": { "energy": 0, "sociability": 0, "stranger_friendly": 0, "routine": 1, "trainability": 1 }
       },
       {
         "value": "frequent",
-        "label": "I handle it whenever I notice it",
+        "label": "Take care of it immediately whenever I notice it",
         "traits": { "energy": 1, "sociability": 0, "stranger_friendly": -1, "routine": 2, "trainability": 1 }
       },
       {
         "value": "enthusiast",
-        "label": "I turn it into a satisfying project",
+        "label": "Improve the process and turn it into a satisfying project",
         "traits": { "energy": 1, "sociability": 1, "stranger_friendly": -1, "routine": 2, "trainability": 2 }
       }
     ]

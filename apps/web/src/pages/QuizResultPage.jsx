@@ -1,8 +1,9 @@
-import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { exportQuizResultImage } from "../lib/shareImage";
 import { resolvePetImageUrl } from "../lib/petImages";
 import { buildPersonalitySummary, matchStrengthLabel } from "../lib/personalityInsights";
+import { getPublicQuizResult } from "../lib/apiClient";
 
 const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const QUIZ_STORAGE_VERSION_KEY = "purrishco.quiz.storage.version";
@@ -43,14 +44,78 @@ function readStoredResult() {
 
 export default function QuizResultPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const [sharedResult, setSharedResult] = useState(null);
+  const [sharedResultError, setSharedResultError] = useState(false);
 
-  const result = useMemo(() => readStoredResult(), []);
+  const storedResult = useMemo(() => readStoredResult(), []);
+
+  // Fetch shared result if ID is in URL
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    getPublicQuizResult(id)
+      .then((result) => {
+        if (result) {
+          setSharedResult(result);
+        } else {
+          setSharedResultError(true);
+        }
+      })
+      .catch(() => {
+        setSharedResultError(true);
+      });
+  }, [id]);
+
+  // Set Open Graph meta tags for shared results
+  useEffect(() => {
+    const result = sharedResult || storedResult;
+    if (!result || !result.match) {
+      return;
+    }
+
+    const imageUrl = resolvePetImageUrl(
+      result.imageUrl || result.match.imageUrl,
+      result.match.id,
+      result.match.name,
+      result.match.petType
+    );
+
+    // Update title and description
+    document.title = `${result.match.name} - Pet Quiz Result | Purrish&Co.`;
+
+    // Remove existing OG meta tags
+    document.querySelectorAll('meta[property^="og:"]').forEach((tag) => tag.remove());
+
+    // Add new OG meta tags
+    const createMetaTag = (property, content) => {
+      const meta = document.createElement("meta");
+      meta.setAttribute("property", property);
+      meta.setAttribute("content", content);
+      document.head.appendChild(meta);
+    };
+
+    createMetaTag("og:title", `I got ${result.match.name}!`);
+    createMetaTag("og:description", result.personalitySummary || "Check out my pet personality quiz result!");
+    createMetaTag("og:image", imageUrl);
+    createMetaTag("og:type", "website");
+    createMetaTag("og:url", window.location.href);
+
+    return () => {
+      // Cleanup: remove OG tags when component unmounts
+      document.querySelectorAll('meta[property^="og:"]').forEach((tag) => tag.remove());
+    };
+  }, [sharedResult, storedResult]);
+
+  const result = sharedResult || storedResult;
 
   if (!result) {
     return (
       <section className="page-header">
         <h1>Quiz Result</h1>
-        <p>No result found yet. Please complete the quiz first.</p>
+        <p>{sharedResultError ? "Result not found." : "No result found yet. Please complete the quiz first."}</p>
         <div className="hero-buttons" style={{ justifyContent: "center" }}>
           <button className="btn btn-primary" type="button" onClick={() => navigate("/quiz")}>
             Go to Quiz

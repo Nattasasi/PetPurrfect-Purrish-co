@@ -73,7 +73,8 @@ export default function ShareResultCard({
       label: "Facebook",
       platform: "facebook",
       icon: "fab fa-facebook-f",
-      url: () => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(platformUrl("facebook"))}`
+      url: () => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(platformUrl("facebook"))}`,
+      copyCaption: true
     },
     {
       label: "X",
@@ -180,12 +181,16 @@ export default function ShareResultCard({
             </button>
             <div className="share-result-heading">
               <h3 id="share-result-title">{title}</h3>
-              <p>{subtitle}</p>
             </div>
             {showCaptionLoading && (
               <div className="share-caption-loading" role="status" aria-live="polite">
                 <span className="share-caption-spinner" aria-hidden="true" />
                 <span>Generating your caption...</span>
+              </div>
+            )}
+            {hasGeneratedCaptions && !showCaptionLoading && (
+              <div className="share-caption-display" role="status" aria-live="polite">
+                <p className="share-caption-text">{selectedCaption}</p>
               </div>
             )}
             {crossPromoText && crossPromoPath && (
