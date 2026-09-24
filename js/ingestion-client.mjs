@@ -41,7 +41,7 @@ export async function trackEvent(type, eventId) {
     // A retry always reuses its ID. The server's atomic create is authoritative.
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        const result = await ingest("analytics/events", payload, { keepalive: true });
+        const result = await ingest("ingest/analytics-events", payload, { keepalive: true });
         return result?.recorded === true;
       } catch (error) {
         if (error.status && error.status < 500) return false;

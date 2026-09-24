@@ -17,7 +17,7 @@ export function validMessage(body) {
 
 export function createIngestionRouter({ record = recordEvent, save = saveMessage } = {}) {
   const router = Router();
-  router.post("/analytics/events", rateLimit(), async (req, res) => {
+  router.post("/ingest/analytics-events", rateLimit(), async (req, res) => {
     if (!validEvent(req.body)) return res.status(400).json({ error: "invalid_event" });
     try { res.json(await record(req.body.type, req.body.eventId)); }
     catch { res.status(503).json({ error: "analytics_unavailable" }); }

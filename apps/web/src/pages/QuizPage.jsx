@@ -6,6 +6,7 @@ import { getPetImageById, resolvePetImageUrl } from "../lib/petImages";
 import { exportQuizResultImage, createQuizResultImageFile } from "../lib/shareImage";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
 import { buildPersonalitySummary, matchStrengthLabel } from "../lib/personalityInsights";
+import { trackViewQuiz, trackStartQuiz, trackCompleteQuiz } from "../lib/analytics";
 import ShareResultCard from "../components/share/ShareResultCard";
 
 const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
@@ -122,6 +123,11 @@ export default function QuizPage() {
     getJson("/api/quiz/profiles")
       .then(setProfileData)
       .catch(() => setProfileData(null));
+  }, []);
+
+  // Funnel: fires once per page visit, independent of whether the user ever answers.
+  useEffect(() => {
+    trackViewQuiz();
   }, []);
 
   const currentQuestion = questions[currentIndex] || null;
@@ -343,6 +349,7 @@ export default function QuizPage() {
       setIsSubmitting(false);
       setSubmitted(true);
       localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(resultPayload));
+      trackCompleteQuiz(resultPayload.persistence?.id, resultPayload.match?.name, resultPayload.match?.confidence);
     }
   };
 
@@ -383,6 +390,10 @@ export default function QuizPage() {
   const selectOption = async (value) => {
     setAnswersById((prev) => ({ ...prev, [currentQuestion.id]: value }));
     setTouched(false);
+    // Funnel: fires once, the first time the user commits an answer.
+    if (currentIndex === 0) {
+      trackStartQuiz();
+    }
     await goNext(value);
   };
 

@@ -4,6 +4,7 @@ import { createPetDebugImage, runPetInference } from "../lib/cv/inference";
 import { composeStickerImage, getMatchedPresetInfo } from "../lib/stickerComposer";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
 import { generateStickerCaptions } from "../lib/apiClient";
+import { trackStickerGeneration } from "../lib/analytics";
 import ShareResultCard from "../components/share/ShareResultCard";
 
 function capitalize(value) {
@@ -103,6 +104,7 @@ export default function StickerPage() {
       setAnalysisError("");
       setIsGenerated(true);
       setIsAnalyzing(false);
+      trackStickerGeneration(inference.breed, imageUrl);
 
       // Caption generation is non-blocking: the sticker is usable immediately,
       // and the local captions remain available if Ollama cannot be reached.

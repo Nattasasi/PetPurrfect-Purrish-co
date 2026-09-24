@@ -110,8 +110,8 @@ test("ingestion rejects invalid input/origins, handles backend failures, never r
     save: async () => { saved += 1; throw new Error("offline"); }
   }));
   const post = await serve(t, app);
-  assert.equal((await post("/analytics/events", { type: "quiz_completion", eventId: randomUUID() })).status, 400);
-  assert.equal((await post("/analytics/events", { type: "browser_session", eventId: randomUUID() })).status, 503);
+  assert.equal((await post("/ingest/analytics-events", { type: "quiz_completion", eventId: randomUUID() })).status, 400);
+  assert.equal((await post("/ingest/analytics-events", { type: "browser_session", eventId: randomUUID() })).status, 503);
   assert.equal((await post("/messages", message(), { Origin: "https://evil.test" })).status, 403);
   assert.equal(saved, 0);
   assert.equal((await post("/messages", message())).status, 503);
