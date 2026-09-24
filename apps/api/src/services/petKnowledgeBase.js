@@ -13,7 +13,7 @@ let lastLoadError = null;
 let loadPromise = null;
 
 const WORKBOOK_PATH = fileURLToPath(
-  new URL("../../../web/public/pet_breeds_COMPLETE_1 - Copy.xlsx", import.meta.url)
+  new URL("../../../web/public/pet_breeds_COMPLETE_1.xlsx", import.meta.url)
 );
 
 function numberInRange(value, minimum = 0, maximum = 1) {

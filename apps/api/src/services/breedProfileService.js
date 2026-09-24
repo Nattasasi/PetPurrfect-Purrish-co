@@ -12,7 +12,7 @@ import XLSX from 'xlsx';
 import { fileURLToPath } from 'node:url';
 
 const WORKBOOK_PATH = fileURLToPath(
-  new URL('../../../web/public/pet_breeds_COMPLETE_1 - Copy.xlsx', import.meta.url)
+  new URL('../../../web/public/pet_breeds_COMPLETE_1.xlsx', import.meta.url)
 );
 
 export const TRAIT_KEYS = ['energy', 'sociability', 'stranger_friendly', 'routine', 'trainability'];

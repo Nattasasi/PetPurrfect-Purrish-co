@@ -1,6 +1,6 @@
 const XLSX = require('xlsx');
 
-const WORKBOOK_PATH = './apps/web/public/pet_breeds_COMPLETE_1 - Copy.xlsx';
+const WORKBOOK_PATH = './apps/web/public/pet_breeds_COMPLETE_1.xlsx';
 const workbook = XLSX.readFile(WORKBOOK_PATH, { cellDates: false });
 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
 const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: null });

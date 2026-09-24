@@ -9,7 +9,7 @@
 !apps/web
 !apps/web/package.json
 !apps/web/public
-!apps/web/public/pet_breeds_COMPLETE_1 - Copy.xlsx
+!apps/web/public/pet_breeds_COMPLETE_1.xlsx
 !Dockerfile
 **/.env*
 **/*service-account*.json
