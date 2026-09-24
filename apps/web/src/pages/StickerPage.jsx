@@ -47,8 +47,12 @@ export default function StickerPage() {
       return;
     }
 
+    // Revoke old blob URLs to prevent cache conflicts
     if (imageUrl.startsWith("blob:")) {
       URL.revokeObjectURL(imageUrl);
+    }
+    if (composedStickerUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(composedStickerUrl);
     }
 
     setFileName(file.name);
@@ -169,8 +173,12 @@ export default function StickerPage() {
   };
 
   const resetUpload = () => {
+    // Revoke all blob URLs to free memory and prevent cache conflicts
     if (imageUrl.startsWith("blob:")) {
       URL.revokeObjectURL(imageUrl);
+    }
+    if (composedStickerUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(composedStickerUrl);
     }
 
     setImageUrl("");
