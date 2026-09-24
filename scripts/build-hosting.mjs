@@ -12,8 +12,8 @@ const copy = (from, to = from) => cp(path.join(root, from), path.join(output, to
   filter: (source) => !path.basename(source).startsWith(".")
 });
 for (const file of [
-  "index.html", "about.html", "contact.html", "quiz.html", "pet.html", "css/style.css",
-  "js/script.js", "js/firebase-config.js", "js/ingestion-client.mjs",
+  "index.html", "contact.html", "quiz.html", "pet.html", "css/style.css",
+  "js/script.js", "js/ingestion-client.mjs",
   "admin/index.html", "admin/login.html", "admin/css/admin.css", "admin/js/admin.js", "admin/js/login.js"
 ]) {
   await copy(file);
