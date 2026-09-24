@@ -75,6 +75,7 @@ a {
     height: 120px;
     max-width: 450px;
     object-fit: contain;
+    margin-top: -60px;
     margin-bottom: -20px;
 }
 
