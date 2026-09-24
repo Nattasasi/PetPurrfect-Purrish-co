@@ -49,7 +49,7 @@ function toPetRecord(source, index = 0) {
       normalizeRating(
         source.sociability ?? source.friendliness ?? source.affection ?? source.social ?? characteristics.temperament
       ),
-    independence:
+    stranger_friendly:
       normalizeRating(source.independence ?? source.independent ?? source.selfSufficient ?? characteristics.group),
     routine:
       normalizeRating(

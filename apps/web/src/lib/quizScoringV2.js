@@ -2,7 +2,7 @@
  * UPDATED QUIZ SCORING LOGIC
  * 
  * Key Changes:
- * - Trait names updated (stranger_friendly replaces independence)
+ * - Trait names use stranger_friendly as the canonical friendliness dimension
  * - Cluster-based matching instead of direct profile matching
  * - All 486 breeds available via clusters
  * - Better trait normalization for new 16-question quiz

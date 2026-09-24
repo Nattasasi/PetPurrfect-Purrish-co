@@ -99,15 +99,17 @@ router.post("/debug/save-result", async (req, res) => {
 router.post("/questions/adaptive", async (req, res) => {
   try {
     const sessionId = typeof req.body.sessionId === "string" ? req.body.sessionId : null;
-    const staticAnswers = Array.isArray(req.body.staticAnswers) ? req.body.staticAnswers : [];
+    const answeredSoFar = Array.isArray(req.body.answeredSoFar)
+      ? req.body.answeredSoFar.filter((item) => item && typeof item.text === "string" && typeof item.label === "string")
+      : [];
       const previousQuestionTexts = Array.isArray(req.body.previousQuestionTexts)
       ? req.body.previousQuestionTexts
       : [];
-      const questionCount = Number(req.body.questionCount) === 1 ? 1 : 5;
+      const questionCount = Number(req.body.questionCount) > 0 ? Number(req.body.questionCount) : 1;
       const questionOffset = Number.isInteger(req.body.questionOffset) ? req.body.questionOffset : 0;
     const previousResult = await getLatestQuizResultForSession(sessionId);
       const result = await generateAdaptiveQuestions(
-        staticAnswers,
+        answeredSoFar,
         previousResult,
         previousQuestionTexts,
         questionCount,

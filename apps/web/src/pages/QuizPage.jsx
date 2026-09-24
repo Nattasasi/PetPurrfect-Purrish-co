@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import staticQuizQuestions from "../data/quizQuestions.json";
 import { scoreQuiz } from "../lib/quizScoring";
 import { postJson, getJson, createSessionId } from "../lib/apiClient";
@@ -12,6 +12,17 @@ const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const STATIC_QUESTION_COUNT = 5;
 const ADAPTIVE_QUESTION_COUNT = 5;
 const TOTAL_QUESTION_COUNT = STATIC_QUESTION_COUNT + ADAPTIVE_QUESTION_COUNT;
+// Slot plan interleaves static (instant) and adaptive (generated) questions so
+// each adaptive question can be generated in the background while the user is
+// answering the static question right before it, hiding Ollama's latency.
+// Layout: S S A S A S A S A, then the discriminator question is appended last.
+const SLOT_TYPES = ["static", "static", "adaptive", "static", "adaptive", "static", "adaptive", "static", "adaptive"];
+const STATIC_SLOTS = SLOT_TYPES.reduce((acc, type, index) => (type === "static" ? [...acc, index] : acc), []);
+const ADAPTIVE_SLOTS = SLOT_TYPES.reduce((acc, type, index) => (type === "adaptive" ? [...acc, index] : acc), []);
+// Maps a static checkpoint slot to the adaptive slot that should start generating in the background as soon as the checkpoint is shown.
+const ADAPTIVE_PREFETCH_CHECKPOINTS = ADAPTIVE_SLOTS.reduce((acc, slotIndex) => ({ ...acc, [slotIndex - 1]: slotIndex }), {});
+const DISCRIMINATOR_TRIGGER_SLOT = ADAPTIVE_SLOTS[ADAPTIVE_SLOTS.length - 1];
+const PRE_DISCRIMINATOR_SLOT_COUNT = SLOT_TYPES.length;
 const TRAIT_SHORT_LABELS = {
   energy: "E",
   sociability: "S",
@@ -69,12 +80,31 @@ const STATIC_QUESTIONS = staticQuizQuestions
   .slice(0, STATIC_QUESTION_COUNT)
   .map((question) => ({ ...question, options: shuffleOptions(question.options) }));
 
+function buildInitialQuestions() {
+  const slots = new Array(PRE_DISCRIMINATOR_SLOT_COUNT).fill(null);
+  STATIC_SLOTS.forEach((slotIndex, order) => {
+    slots[slotIndex] = STATIC_QUESTIONS[order];
+  });
+  return slots;
+}
+
+// Answers for every resolved slot before `beforeIndex`, used as the growing context sent to Ollama.
+function buildAnsweredSoFar(questionsSnapshot, answersSnapshot, beforeIndex) {
+  const list = [];
+  for (let index = 0; index < beforeIndex; index += 1) {
+    const question = questionsSnapshot[index];
+    if (!question) continue;
+    const option = question.options.find((item) => item.value === answersSnapshot[question.id]);
+    if (option) list.push({ text: question.text, label: option.label });
+  }
+  return list;
+}
+
 export default function QuizPage() {
   const [sessionId] = useInMemoryPageState("quiz.sessionId", createSessionId);
-  const [questions, setQuestions] = useInMemoryPageState("quiz.questions", STATIC_QUESTIONS);
+  const [questions, setQuestions] = useInMemoryPageState("quiz.questions", buildInitialQuestions);
   const [adaptiveLoading, setAdaptiveLoading] = useInMemoryPageState("quiz.adaptiveLoading", false);
   const [adaptiveError, setAdaptiveError] = useInMemoryPageState("quiz.adaptiveError", "");
-  const totalQuestions = questions.length;
   const [currentIndex, setCurrentIndex] = useInMemoryPageState("quiz.currentIndex", 0);
   const [answersById, setAnswersById] = useInMemoryPageState("quiz.answers", {});
   const [touched, setTouched] = useInMemoryPageState("quiz.touched", false);
@@ -85,6 +115,8 @@ export default function QuizPage() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [debugScoreBreakdown, setDebugScoreBreakdown] = useState(null);
   const [profileData, setProfileData] = useState(null);
+  // Tracks in-flight/settled background prefetch requests per slot index so a checkpoint never double-fires.
+  const adaptiveFetchRef = useRef({});
 
   useEffect(() => {
     getJson("/api/quiz/profiles")
@@ -92,13 +124,14 @@ export default function QuizPage() {
       .catch(() => setProfileData(null));
   }, []);
 
-  const currentQuestion = questions[currentIndex];
-  const selectedValue = answersById[currentQuestion.id] ?? "";
+  const currentQuestion = questions[currentIndex] || null;
+  const selectedValue = currentQuestion ? answersById[currentQuestion.id] ?? "" : "";
   const progress = ((currentIndex + 1) / TOTAL_QUESTION_COUNT) * 100;
-  // Question 5 and each later question load the next adaptive question on demand.
-  const isLastStaticQuestion = currentIndex === STATIC_QUESTION_COUNT - 1 && questions.length === STATIC_QUESTION_COUNT;
 
-  const scoring = useMemo(() => scoreQuiz(questions, answersById, profileData), [questions, answersById, profileData]);
+  const scoring = useMemo(
+    () => scoreQuiz(questions.filter(Boolean), answersById, profileData),
+    [questions, answersById, profileData]
+  );
 
   const displayResult = useMemo(() => {
     if (apiResult?.match) {
@@ -131,44 +164,65 @@ export default function QuizPage() {
     };
   }, [apiResult, scoring]);
 
-  // Request only the next adaptive question so the user never waits for a full batch.
-  const fetchAdaptiveQuestions = async (staticAnswersById) => {
-    setAdaptiveLoading(true);
-    setAdaptiveError("");
-    try {
-      if (questions.length === 9) {
-        const discriminatorTraits = scoreQuiz(questions, staticAnswersById, profileData).normalized;
-        const result = await postJson("/api/quiz/discriminator-question", {
-          sessionId,
-          traits: discriminatorTraits
-        });
-        if (!result.question || !Array.isArray(result.question.options) || result.question.options.length !== 4) {
-          throw new Error("The final matching question was invalid.");
-        }
-        setQuestions([...questions, result.question]);
-        return true;
-      }
+  // Starts (or reuses an in-flight) background request for the adaptive question at slotIndex,
+  // using whatever answers have accumulated before checkpointIndex. Returns the shared promise so
+  // both the silent background trigger and an on-demand caller can await the same request.
+  const startAdaptivePrefetch = (slotIndex, checkpointIndex) => {
+    if (adaptiveFetchRef.current[slotIndex]) {
+      return adaptiveFetchRef.current[slotIndex];
+    }
+    const ordinal = ADAPTIVE_SLOTS.indexOf(slotIndex);
+    const answeredSoFar = buildAnsweredSoFar(questions, answersById, checkpointIndex);
+    const previousQuestionTexts = ADAPTIVE_SLOTS
+      .filter((adaptiveSlot) => adaptiveSlot < slotIndex && questions[adaptiveSlot])
+      .map((adaptiveSlot) => questions[adaptiveSlot].text);
 
-      const staticAnswers = STATIC_QUESTIONS.map((question) => ({
-        questionId: question.id,
-        value: staticAnswersById[question.id]
-      }));
-      const previousQuestionTexts = questions
-        .slice(STATIC_QUESTION_COUNT)
-        .map((question) => question.text)
-        .filter(Boolean);
-      const result = await postJson("/api/quiz/questions/adaptive", {
-        sessionId,
-        staticAnswers,
-        previousQuestionTexts,
-        questionCount: 1,
-        questionOffset: questions.length - STATIC_QUESTION_COUNT
-      });
+    const promise = postJson("/api/quiz/questions/adaptive", {
+      sessionId,
+      answeredSoFar,
+      previousQuestionTexts,
+      questionCount: 1,
+      questionOffset: STATIC_QUESTION_COUNT + ordinal
+    }).then((result) => {
       if (result.source !== "ollama" || !Array.isArray(result.questions) || result.questions.length !== 1) {
         throw new Error("Ollama did not return the next question.");
       }
-      const combined = [...questions, result.questions[0]];
-      setQuestions(combined);
+      const [question] = result.questions;
+      setQuestions((prev) => {
+        const next = [...prev];
+        next[slotIndex] = question;
+        return next;
+      });
+      return question;
+    }).catch((error) => {
+      // Clear the cache so a retry (background or on-demand) can be attempted again.
+      delete adaptiveFetchRef.current[slotIndex];
+      throw error;
+    });
+
+    adaptiveFetchRef.current[slotIndex] = promise;
+    return promise;
+  };
+
+  // Silently kicks off the next adaptive question's generation while the user is still on the static checkpoint question right before it.
+  useEffect(() => {
+    const slotIndex = ADAPTIVE_PREFETCH_CHECKPOINTS[currentIndex];
+    if (slotIndex === undefined || questions[slotIndex] || adaptiveFetchRef.current[slotIndex]) {
+      return;
+    }
+    startAdaptivePrefetch(slotIndex, currentIndex).catch(() => {
+      // Swallowed here; ensureAdaptiveSlotResolved surfaces the error if the user reaches this slot before a retry succeeds.
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]);
+
+  // Awaits (or starts) the adaptive fetch for slotIndex, showing the loading state only if it hasn't already resolved in the background.
+  const ensureAdaptiveSlotResolved = async (slotIndex) => {
+    if (questions[slotIndex]) return true;
+    setAdaptiveLoading(true);
+    setAdaptiveError("");
+    try {
+      await startAdaptivePrefetch(slotIndex, slotIndex - 1);
       return true;
     } catch (error) {
       setAdaptiveError(error?.message || "We couldn't generate your personalized questions. Please try again.");
@@ -176,6 +230,39 @@ export default function QuizPage() {
     } finally {
       setAdaptiveLoading(false);
     }
+  };
+
+  const fetchDiscriminatorQuestion = async (answersSnapshot) => {
+    setAdaptiveLoading(true);
+    setAdaptiveError("");
+    try {
+      const discriminatorTraits = scoreQuiz(questions.filter(Boolean), answersSnapshot, profileData).normalized;
+      const result = await postJson("/api/quiz/discriminator-question", {
+        sessionId,
+        traits: discriminatorTraits
+      });
+      if (!result.question || !Array.isArray(result.question.options) || result.question.options.length !== 4) {
+        throw new Error("The final matching question was invalid.");
+      }
+      setQuestions((prev) => [...prev, result.question]);
+      return true;
+    } catch (error) {
+      setAdaptiveError(error?.message || "We couldn't generate your personalized questions. Please try again.");
+      return false;
+    } finally {
+      setAdaptiveLoading(false);
+    }
+  };
+
+  const retryPendingGeneration = async () => {
+    if (currentIndex === DISCRIMINATOR_TRIGGER_SLOT) {
+      const generated = await fetchDiscriminatorQuestion(answersById);
+      if (generated) setCurrentIndex((prev) => prev + 1);
+      return;
+    }
+    const slotIndex = currentIndex + 1;
+    const generated = await ensureAdaptiveSlotResolved(slotIndex);
+    if (generated) setCurrentIndex((prev) => prev + 1);
   };
 
   const submitAnswers = async (answersMap, questionsForScoring = questions) => {
@@ -272,20 +359,25 @@ export default function QuizPage() {
     setTouched(false);
 
     const nextAnswers = { ...answersById, [currentQuestion.id]: value };
-    if (currentIndex >= TOTAL_QUESTION_COUNT - 1) {
+    if (currentIndex === TOTAL_QUESTION_COUNT - 1) {
       setApiError("");
       setIsSubmitting(true);
       await submitAnswers(nextAnswers);
       return;
     }
 
-    if (isLastStaticQuestion || currentIndex === totalQuestions - 1) {
-      const generated = await fetchAdaptiveQuestions(nextAnswers);
+    if (currentIndex === DISCRIMINATOR_TRIGGER_SLOT) {
+      const generated = await fetchDiscriminatorQuestion(nextAnswers);
       if (generated) setCurrentIndex((prev) => prev + 1);
       return;
     }
 
-    setCurrentIndex((prev) => Math.min(totalQuestions - 1, prev + 1));
+    const nextIndex = currentIndex + 1;
+    if (!questions[nextIndex]) {
+      const generated = await ensureAdaptiveSlotResolved(nextIndex);
+      if (!generated) return;
+    }
+    setCurrentIndex(nextIndex);
   };
 
   const selectOption = async (value) => {
@@ -303,19 +395,21 @@ export default function QuizPage() {
     setApiResult(null);
     setApiError("");
     localStorage.removeItem(RESULT_STORAGE_KEY);
-    setQuestions(STATIC_QUESTIONS);
+    adaptiveFetchRef.current = {};
+    setQuestions(buildInitialQuestions());
     setDebugScoreBreakdown(null);
   };
 
   const showDebugResult = async () => {
-    const debugAnswers = questions.map((question) => {
+    const resolvedQuestions = questions.filter(Boolean);
+    const debugAnswers = resolvedQuestions.map((question) => {
       const option = question.options[Math.floor(Math.random() * question.options.length)];
       return { questionId: question.id, value: option.value };
     });
     const debugAnswersById = Object.fromEntries(
       debugAnswers.map((answer) => [answer.questionId, answer.value])
     );
-    const computedScoring = scoreQuiz(questions, debugAnswersById, profileData);
+    const computedScoring = scoreQuiz(resolvedQuestions, debugAnswersById, profileData);
     setDebugScoreBreakdown({
       raw: computedScoring.raw,
       normalized: computedScoring.normalized,
@@ -389,9 +483,16 @@ export default function QuizPage() {
           ) : adaptiveError ? (
             <div className="quiz-result-panel">
               <p className="quiz-error">{adaptiveError}</p>
-              <button className="btn btn-primary" type="button" onClick={() => fetchAdaptiveQuestions(answersById)}>
+              <button className="btn btn-primary" type="button" onClick={retryPendingGeneration}>
                 Try Again
               </button>
+            </div>
+          ) : !currentQuestion ? (
+            <div className="quiz-loading" role="status" aria-live="polite">
+              <div className="quiz-loading-paw" aria-hidden="true">🐾</div>
+              <p className="quiz-loading-kicker">A fresh question is taking shape</p>
+              <h2>Thinking beyond the obvious...</h2>
+              <p className="quiz-hint">Finding a curious little twist that feels like you.</p>
             </div>
           ) : isSubmitting ? (
             <div className="quiz-loading quiz-loading--matching" role="status" aria-live="polite">

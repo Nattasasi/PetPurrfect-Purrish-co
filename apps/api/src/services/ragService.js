@@ -9,7 +9,7 @@ import {
   rankBreedsInClusters
 } from "./breedProfileService.js";
 
-const TRAIT_KEYS = ["energy", "sociability", "independence", "routine", "trainability"];
+const TRAIT_KEYS = ["energy", "sociability", "stranger_friendly", "routine", "trainability"];
 const OLLAMA_TIMEOUT_MS = 300000;
 const GROUNDING_CANDIDATE_COUNT = 3;
 const MAX_SHARE_CAPTIONS = 3;
@@ -205,7 +205,7 @@ export async function evaluateQuiz(payload = {}) {
   const traits = {
     energy: suppliedTraits.energy ?? 0.5,
     sociability: suppliedTraits.sociability ?? 0.5,
-    stranger_friendly: suppliedTraits.stranger_friendly ?? suppliedTraits.independence ?? 0.5,
+    stranger_friendly: suppliedTraits.stranger_friendly ?? 0.5,
     routine: suppliedTraits.routine ?? 0.5,
     trainability: suppliedTraits.trainability ?? 0.5
   };

@@ -66,9 +66,9 @@ function parseWorkbookKnowledgeBase() {
         traits: {
           energy: energy ?? 0.5,
           sociability: socialNeeds ?? affection ?? 0.5,
-          // The workbook has no direct independence score. Lower social needs
+          // The workbook has no direct stranger-friendly score. Lower social needs
           // and lower affection requirements are the least invasive proxy.
-          independence: 1 - ((socialNeeds ?? 0.5) * 0.7 + (affection ?? 0.5) * 0.3),
+          stranger_friendly: 1 - ((socialNeeds ?? 0.5) * 0.7 + (affection ?? 0.5) * 0.3),
           // Adaptable breeds generally need less environmental predictability.
           routine: 1 - (adaptability ?? 0.5),
           trainability: intelligence ?? 0.5
@@ -88,7 +88,7 @@ const FALLBACK_PROFILES = [
     petType: "dog",
     summary: "Friendly, social, and well-suited to active owners.",
     imageUrl: "/images/hero-dog.png",
-    traits: { energy: 0.85, sociability: 0.9, independence: 0.35, routine: 0.6, trainability: 0.9 }
+    traits: { energy: 0.85, sociability: 0.9, stranger_friendly: 0.35, routine: 0.6, trainability: 0.9 }
   },
   {
     id: "labrador_retriever",
@@ -96,7 +96,7 @@ const FALLBACK_PROFILES = [
     petType: "dog",
     summary: "Warm, upbeat, and happiest when life is active and social.",
     imageUrl: "/images/hero-dog.png",
-    traits: { energy: 0.8, sociability: 0.85, independence: 0.4, routine: 0.55, trainability: 0.85 }
+    traits: { energy: 0.8, sociability: 0.85, stranger_friendly: 0.4, routine: 0.55, trainability: 0.85 }
   },
   {
     id: "corgi",
@@ -104,7 +104,7 @@ const FALLBACK_PROFILES = [
     petType: "dog",
     summary: "Cheerful, people-loving, and better with structure than chaos.",
     imageUrl: "/images/hero-dog.png",
-    traits: { energy: 0.75, sociability: 0.8, independence: 0.45, routine: 0.7, trainability: 0.75 }
+    traits: { energy: 0.75, sociability: 0.8, stranger_friendly: 0.45, routine: 0.7, trainability: 0.75 }
   },
   {
     id: "poodle",
@@ -112,7 +112,7 @@ const FALLBACK_PROFILES = [
     petType: "dog",
     summary: "Smart, adaptable, and quick to pick up on your rhythms.",
     imageUrl: "/images/hero-dog.png",
-    traits: { energy: 0.65, sociability: 0.8, independence: 0.45, routine: 0.65, trainability: 0.95 }
+    traits: { energy: 0.65, sociability: 0.8, stranger_friendly: 0.45, routine: 0.65, trainability: 0.95 }
   },
   {
     id: "shiba_inu",
@@ -120,7 +120,7 @@ const FALLBACK_PROFILES = [
     petType: "dog",
     summary: "Independent, alert, and confident with a balanced routine.",
     imageUrl: "/images/product6.jpg",
-    traits: { energy: 0.65, sociability: 0.45, independence: 0.85, routine: 0.6, trainability: 0.5 }
+    traits: { energy: 0.65, sociability: 0.45, stranger_friendly: 0.85, routine: 0.6, trainability: 0.5 }
   },
   {
     id: "husky",
@@ -128,7 +128,7 @@ const FALLBACK_PROFILES = [
     petType: "dog",
     summary: "Energetic, bold, and happiest when life has room to roam.",
     imageUrl: "/images/hero-dog.png",
-    traits: { energy: 0.95, sociability: 0.55, independence: 0.8, routine: 0.35, trainability: 0.45 }
+    traits: { energy: 0.95, sociability: 0.55, stranger_friendly: 0.8, routine: 0.35, trainability: 0.45 }
   },
   {
     id: "ragdoll_cat",
@@ -136,7 +136,7 @@ const FALLBACK_PROFILES = [
     petType: "cat",
     summary: "Calm, affectionate, and ideal for relaxed households.",
     imageUrl: "/images/product4.jpg",
-    traits: { energy: 0.35, sociability: 0.8, independence: 0.5, routine: 0.65, trainability: 0.5 }
+    traits: { energy: 0.35, sociability: 0.8, stranger_friendly: 0.5, routine: 0.65, trainability: 0.5 }
   },
   {
     id: "siamese_cat",
@@ -144,7 +144,7 @@ const FALLBACK_PROFILES = [
     petType: "cat",
     summary: "Expressive, social, and always ready to be part of the moment.",
     imageUrl: "/images/product4.jpg",
-    traits: { energy: 0.7, sociability: 0.85, independence: 0.4, routine: 0.5, trainability: 0.6 }
+    traits: { energy: 0.7, sociability: 0.85, stranger_friendly: 0.4, routine: 0.5, trainability: 0.6 }
   },
   {
     id: "persian_cat",
@@ -152,7 +152,7 @@ const FALLBACK_PROFILES = [
     petType: "cat",
     summary: "Soft-spoken, low-key, and happiest in a calm, comfy setting.",
     imageUrl: "/images/product4.jpg",
-    traits: { energy: 0.25, sociability: 0.4, independence: 0.7, routine: 0.75, trainability: 0.35 }
+    traits: { energy: 0.25, sociability: 0.4, stranger_friendly: 0.7, routine: 0.75, trainability: 0.35 }
   },
   {
     id: "border_collie",
@@ -160,7 +160,7 @@ const FALLBACK_PROFILES = [
     petType: "dog",
     summary: "Highly trainable and built for active, structured lifestyles.",
     imageUrl: "/images/hero-dog.png",
-    traits: { energy: 0.95, sociability: 0.7, independence: 0.4, routine: 0.8, trainability: 0.95 }
+    traits: { energy: 0.95, sociability: 0.7, stranger_friendly: 0.4, routine: 0.8, trainability: 0.95 }
   },
   {
     id: "british_shorthair",
@@ -168,7 +168,7 @@ const FALLBACK_PROFILES = [
     petType: "cat",
     summary: "Independent, steady, and comfortable with routine.",
     imageUrl: "/images/product4.jpg",
-    traits: { energy: 0.3, sociability: 0.45, independence: 0.8, routine: 0.7, trainability: 0.45 }
+    traits: { energy: 0.3, sociability: 0.45, stranger_friendly: 0.8, routine: 0.7, trainability: 0.45 }
   },
   {
     id: "dachshund",
@@ -176,7 +176,7 @@ const FALLBACK_PROFILES = [
     petType: "dog",
     summary: "Curious, self-directed, and happiest with a familiar routine.",
     imageUrl: "/images/hero-dog.png",
-    traits: { energy: 0.55, sociability: 0.55, independence: 0.7, routine: 0.75, trainability: 0.4 }
+    traits: { energy: 0.55, sociability: 0.55, stranger_friendly: 0.7, routine: 0.75, trainability: 0.4 }
   }
 ];
 

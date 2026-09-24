@@ -24,7 +24,7 @@ async function loadCocoModel() {
 
 function isPetLabel(label = "") {
   const value = label.toLowerCase();
-  return value.includes("cat") || value.includes("dog") || value.includes("animal") || value.includes("person");
+  return value.includes("cat") || value.includes("dog");
 }
 
 function fallbackAttributes(imageElement) {

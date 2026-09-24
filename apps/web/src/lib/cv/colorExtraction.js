@@ -95,7 +95,11 @@ export function extractPetColors(imageElement, mask) {
   const pixels = [];
   const weights = [];
   const center = (SAMPLE_SIZE - 1) / 2;
-  const margin = mask ? 0 : Math.round(SAMPLE_SIZE * INNER_MARGIN_RATIO);
+  const maskCoverage = mask
+    ? mask.reduce((count, value) => count + (value >= 0.15 ? 1 : 0), 0) / mask.length
+    : 0;
+  const useMask = Boolean(mask) && maskCoverage >= 0.05 && maskCoverage <= 0.9;
+  const margin = useMask ? 0 : Math.round(SAMPLE_SIZE * INNER_MARGIN_RATIO);
 
   for (let y = margin; y < SAMPLE_SIZE - margin; y++) {
     for (let x = margin; x < SAMPLE_SIZE - margin; x++) {
@@ -104,7 +108,7 @@ export function extractPetColors(imageElement, mask) {
         continue;
       }
 
-      if (mask) {
+      if (useMask) {
         // Trust the segmentation model as the sole signal for what's pet
         // vs. background — no geometric guessing layered on top of it.
         const maskWeight = mask[y * SAMPLE_SIZE + x];
@@ -137,10 +141,16 @@ export function extractPetColors(imageElement, mask) {
   const rest = clusters.slice(1).sort((a, b) => luminance(a.rgb) - luminance(b.rgb));
   const darkCluster = rest[0] || mainCluster;
   const secondaryCluster = rest[1] || mainCluster;
+  const totalPopulation = clusters.reduce((sum, cluster) => sum + cluster.population, 0) || 1;
 
   return {
     main: toRoundedRgb(mainCluster.rgb),
     secondary: toRoundedRgb(secondaryCluster.rgb),
-    dark: toRoundedRgb(darkCluster.rgb)
+    dark: toRoundedRgb(darkCluster.rgb),
+    populations: {
+      main: mainCluster.population / totalPopulation,
+      secondary: secondaryCluster.population / totalPopulation,
+      dark: darkCluster.population / totalPopulation
+    }
   };
 }

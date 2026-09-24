@@ -8,22 +8,21 @@ const ALL_QUESTIONS = JSON.parse(
   readFileSync(path.join(__dirname, "../data/quizQuestions.json"), "utf-8")
 );
 
-const TRAIT_KEYS = ["energy", "sociability", "independence", "routine", "trainability"];
+const TRAIT_KEYS = ["energy", "sociability", "stranger_friendly", "routine", "trainability"];
 const OLLAMA_TIMEOUT_MS = 60000;
 const STATIC_QUESTION_COUNT = 5;
-const ADAPTIVE_QUESTION_COUNT = 5;
+const ADAPTIVE_QUESTION_COUNT = 1;
 const STATIC_QUESTIONS = ALL_QUESTIONS.slice(0, STATIC_QUESTION_COUNT);
 
-function describeStaticAnswers(staticAnswers = []) {
-  if (staticAnswers.length === 0) return "No initial answers were provided.";
-  return staticAnswers.map((answer) => {
-    const question = STATIC_QUESTIONS.find((item) => item.id === answer.questionId);
-    const option = question?.options.find((item) => item.value === answer.value);
-    return `- "${question?.text || answer.questionId}" -> "${option?.label || answer.value}"`;
-  }).join("\n");
+// answeredSoFar holds whatever questions (static or previously generated) the
+// user has already answered at the moment of this call, so context grows as
+// the quiz progresses instead of requiring the full static block upfront.
+function describeAnsweredSoFar(answeredSoFar = []) {
+  if (answeredSoFar.length === 0) return "No questions have been answered yet.";
+  return answeredSoFar.map((answer) => `- "${answer.text}" -> "${answer.label}"`).join("\n");
 }
 
-function buildPrompt(staticAnswers, previousResult, previousQuestionTexts = [], questionCount) {
+function buildPrompt(answeredSoFar, previousResult, previousQuestionTexts = [], questionCount) {
   const traitContext = previousResult
     ? `The same user previously took this quiz and matched with "${previousResult.matchName || "an unknown pet"}". Their previous trait profile was ${JSON.stringify(previousResult.traits || {})}. Create fresh scenarios.`
     : "This is the user's first time taking the quiz, so use varied, everyday scenarios.";
@@ -35,12 +34,12 @@ function buildPrompt(staticAnswers, previousResult, previousQuestionTexts = [], 
 
 ${traitContext}
 
-The user answered these initial questions:
-${describeStaticAnswers(staticAnswers)}
+The user has answered these questions so far:
+${describeAnsweredSoFar(answeredSoFar)}
 
 ${previousQuestionContext}
 
-Generate exactly ${questionCount} new question object${questionCount === 1 ? "" : "s"} in this exact JSON shape: {"questions":[{"text":"...","options":[{"value":"a","label":"...","traits":{"energy":0,"sociability":0,"independence":0,"routine":0,"trainability":0}}]}]}. Ask about the user's routines, reactions, priorities, social situations, decisions, preferences, or imaginative everyday scenarios. Never ask about breeds, species, animals, pets, pet ownership, grooming, feeding, training, animal behavior, or knowledge of animal care. Do not mention dogs, cats, or any other animal anywhere in question text or option labels. Prioritize surprising, varied, and memorable questions over precise matching accuracy. Every question must test a distinct scenario; do not repeat the same scenario, wording, or underlying choice. Each question needs exactly 4 options, and each option needs trait numbers from -2 to 2 for energy, sociability, independence, routine, and trainability. Output only raw JSON.`;
+Generate exactly ${questionCount} new question object${questionCount === 1 ? "" : "s"} in this exact JSON shape: {"questions":[{"text":"...","options":[{"value":"a","label":"...","traits":{"energy":0,"sociability":0,"stranger_friendly":0,"routine":0,"trainability":0}}]}]}. Ask about the user's routines, reactions, priorities, social situations, decisions, preferences, or imaginative everyday scenarios. Never ask about breeds, species, animals, pets, pet ownership, grooming, feeding, training, animal behavior, or knowledge of animal care. Do not mention dogs, cats, or any other animal anywhere in question text or option labels. Prioritize surprising, varied, and memorable questions over precise matching accuracy. Every question must test a distinct scenario; do not repeat the same scenario, wording, or underlying choice. Each question needs exactly 4 options, and each option needs trait numbers from -2 to 2 for energy, sociability, stranger_friendly, routine, and trainability. Output only raw JSON.`;
 }
 
 async function callOllama(prompt) {
@@ -130,17 +129,17 @@ export function getStaticQuestions() {
 }
 
 export async function generateAdaptiveQuestions(
-  staticAnswers,
+  answeredSoFar,
   previousResult,
   previousQuestionTexts = [],
   questionCount = ADAPTIVE_QUESTION_COUNT,
   questionOffset = 0
 ) {
-  const prompt = buildPrompt(staticAnswers, previousResult, previousQuestionTexts, questionCount);
+  const prompt = buildPrompt(answeredSoFar, previousResult, previousQuestionTexts, questionCount);
 
   // Each adaptive question is one independent Ollama call with strict output
   // validation (exact option count, no duplicates, no banned words). Across
-  // the ~15 sequential calls in a full quiz, a single transient miss (a
+  // four sequential calls in a full quiz, a single transient miss (a
   // malformed JSON response, a slow generation, one extra/missing option)
   // used to abort the whole quiz. Retry a few times before giving up so
   // one bad sample doesn't block the user.

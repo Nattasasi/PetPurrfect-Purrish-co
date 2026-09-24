@@ -13,7 +13,7 @@ const TRAIT_COPY = {
     mid: { adjective: "easygoing", sentence: "You're comfortable both socializing and enjoying quiet time." },
     low: { adjective: "reserved", sentence: "You value your alone time and a peaceful environment." }
   },
-  independence: {
+  stranger_friendly: {
     high: { adjective: "independent", sentence: "You're independent and confident making decisions on your own." },
     mid: { adjective: "adaptable", sentence: "You like a balance of independence and guidance." },
     low: { adjective: "team-oriented", sentence: "You appreciate close companionship and clear guidance." }
