@@ -69,7 +69,7 @@ document.querySelectorAll(".product-card button")
 
     button.addEventListener("click", () => {
 
-        button.innerText = "Added ✓";
+        button.innerText = "Added";
 
         setTimeout(() => {
 

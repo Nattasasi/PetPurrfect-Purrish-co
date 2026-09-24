@@ -204,7 +204,7 @@ export default function StickerPage() {
     : "Upload a cat or dog photo to begin analysis";
 
   const stickerShareCaption = analysisResult?.validPet
-    ? `🐾 My pet just got turned into a ${analysisResult.breed} sticker by Purrish&Co! ${capitalize(matchedPreset?.name || "playful")} coloring, ${detectedAttributes.faceShape || "round"} face, 100% adorable. Get yours free with every order! 🐶✨`
+    ? `My pet just got turned into a ${analysisResult.breed} sticker by Purrish&Co! ${capitalize(matchedPreset?.name || "playful")} coloring, ${detectedAttributes.faceShape || "round"} face, 100% adorable. Get yours free with every order!`
     : "";
 
   const handleDownload = () => {
@@ -227,7 +227,7 @@ export default function StickerPage() {
   return (
     <>
       <section className="page-header">
-        <h1>🐶 For Your Pet</h1>
+        <h1><img src="/business_assets/purrish_pet-06.png" alt="" className="inline-pet-icon" /> For Your Pet</h1>
         <p>
           Upload a photo of your pet and receive a personalized sticker created
           just for them.
@@ -355,7 +355,11 @@ export default function StickerPage() {
             </div>
           ) : (
             <>
-              <i className="fa-solid fa-paw" />
+              <img
+                src="/business_assets/purrish_pet-08.png"
+                alt=""
+                className="sticker-placeholder-icon"
+              />
               <h3>Your Sticker Will Appear Here</h3>
               <p>Upload a pet image and generate your custom sticker preview.</p>
             </>

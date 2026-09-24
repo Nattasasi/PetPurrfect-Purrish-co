@@ -2,7 +2,7 @@ export default function ContactPage() {
   return (
     <>
       <section className="page-header">
-        <h1>Get In Touch 🐾</h1>
+        <h1>Get In Touch <img src="/business_assets/purrish_pet-06.png" alt="" className="inline-pet-icon" /></h1>
         <p>Have questions or suggestions? We'd love to hear from you!</p>
       </section>
 

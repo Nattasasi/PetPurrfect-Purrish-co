@@ -48,7 +48,7 @@ export default function App() {
     productButtons.forEach((button) => {
       const oldText = button.innerText;
       const handler = () => {
-        button.innerText = "Added ✓";
+        button.innerText = "Added";
         setTimeout(() => {
           button.innerText = oldText;
         }, 2000);
@@ -83,7 +83,7 @@ export default function App() {
     <>
       <header>
         <nav className="navbar">
-          <div className="logo">🐾 Purrish&Co.</div>
+          <img src="/business_assets/purrish_logo.png" alt="Purrish&Co." className="logo" />
           <ul className="nav-links">
             <li>
               <NavLink to="/" className={({ isActive }) => (isActive ? "active" : undefined)}>
@@ -129,7 +129,7 @@ export default function App() {
       </main>
 
       <footer>
-        <h2>🐾 Purrish&Co.</h2>
+        <img src="/business_assets/purrish_logo.png" alt="Purrish&Co." className="logo-footer" />
         <p>"We are also your pets' best friend."</p>
         <p>© 2026 Purrish&Co. All Rights Reserved.</p>
       </footer>

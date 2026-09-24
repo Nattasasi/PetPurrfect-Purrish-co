@@ -64,6 +64,13 @@ a {
 }
 
 .brand {
+    display: inline-block;
+    height: 40px;
+    max-width: 150px;
+    object-fit: contain;
+}
+
+.brand-text {
     color: var(--pink-dark);
     font-family: "Fredoka", sans-serif;
     font-size: 1.45rem;
@@ -172,7 +179,9 @@ a {
 
 .login-brand .brand {
     display: inline-block;
-    font-size: 1.7rem;
+    height: 90px;
+    max-width: 320px;
+    object-fit: contain;
     margin-bottom: 80px;
 }
 

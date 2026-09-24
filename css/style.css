@@ -51,7 +51,7 @@ header{
     width:100%;
     z-index:1000;
     backdrop-filter:blur(15px);
-    background:rgba(255,255,255,.75);
+    background:rgba(255,255,255,.3);
     box-shadow:0 5px 25px rgba(0,0,0,.05);
 }
 
@@ -62,14 +62,37 @@ header{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    padding:18px 0;
+    padding:8px 0;
 }
 
 .logo{
-    font-family:"Fredoka",sans-serif;
-    font-size:1.8rem;
-    font-weight:700;
-    color:var(--primary);
+    height: 100px;
+    max-width: 360px;
+    object-fit: contain;
+    display: block;
+}
+
+.logo-footer{
+    height: 120px;
+    max-width: 400px;
+    object-fit: contain;
+    margin-bottom: 0.5rem;
+}
+
+.inline-pet-icon{
+    width:1.5em;
+    height:1.5em;
+    object-fit:cover;
+    object-position:center;
+    clip-path:inset(10% 5% 10% 2% round 10%);
+    vertical-align:middle;
+    margin-left:.15em;
+}
+
+.logo-brand{
+    height: 80px;
+    max-width: 300px;
+    object-fit: contain;
 }
 
 .nav-links{
@@ -697,9 +720,13 @@ section h2{
 }
 
 .info-card li::before{
-    content:"🐾";
+    content:"";
     position:absolute;
     left:0;
+    top:.15em;
+    width:40px;
+    height:40px;
+    background:url("apps/web/public/business_assets/purrish_pet-06.png") center/contain no-repeat;
 }
 
 
@@ -799,22 +826,26 @@ footer p{
 
 
 body::before{
-    content:"🐾";
+    content:"";
     position:fixed;
     top:120px;
     left:30px;
-    font-size:3rem;
+    width:128px;
+    height:128px;
+    background:url("apps/web/public/business_assets/purrish_pet-06.png") center/contain no-repeat;
     opacity:.08;
     z-index:-1;
     animation:float 5s ease-in-out infinite;
 }
 
 body::after{
-    content:"🐶";
+    content:"";
     position:fixed;
     bottom:120px;
     right:40px;
-    font-size:4rem;
+    width:160px;
+    height:160px;
+    background:url("apps/web/public/business_assets/purrish_pet-07.png") center/contain no-repeat;
     opacity:.08;
     z-index:-1;
     animation:float 6s ease-in-out infinite;

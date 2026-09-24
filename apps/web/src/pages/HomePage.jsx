@@ -7,7 +7,7 @@ export default function HomePage() {
           <h1>
             Personalized Products
             <br />
-            For Your Best Friend 🐶
+            For Your Best Friend <img src="/business_assets/purrish_pet-06.png" alt="" className="inline-pet-icon" />
           </h1>
           <p>
             Purrish&amp;Co. creates adorable pet products with AI-powered

@@ -123,16 +123,16 @@ async function generatePersonalitySummary(traits, topTraits, selected) {
 function buildShareCaptionFallback(selected, context = "pet personality quiz") {
   if (context.includes("sticker")) {
     return [
-      `My pet just got turned into a ${selected.name} sticker by Purrish&Co. 🐾 Create yours and share it!`,
+      `My pet just got turned into a ${selected.name} sticker by Purrish&Co. Create yours and share it!`,
       `I made a custom ${selected.name} sticker with Purrish&Co.! What would your pet look like?`,
-      `Would your pet get the same result? Try the Purrish&Co. sticker maker and find out! ✨`
+      `Would your pet get the same result? Try the Purrish&Co. sticker maker and find out!`
     ];
   }
 
   return [
-    `My Purrish&Co. quiz says I'm a match for a ${selected.name} 🐾 What pet matches you?`,
+    `My Purrish&Co. quiz says I'm a match for a ${selected.name}. What pet matches you?`,
     `Apparently, my personality matches a ${selected.name}. Take the Purrish&Co. quiz and find yours!`,
-    `Would you get the same result? Discover your person-pet match with Purrish&Co. ✨`
+    `Would you get the same result? Discover your person-pet match with Purrish&Co.`
   ];
 }
 

@@ -73,7 +73,7 @@ export default function QuizResultPage() {
   return (
     <>
       <section className="page-header">
-        <h1>🐾 Your Quiz Result</h1>
+        <h1><img src="/business_assets/purrish_pet-06.png" alt="" className="inline-pet-icon" /> Your Quiz Result</h1>
         <p>Here's what your answers reveal about you and your ideal pet match.</p>
       </section>
 

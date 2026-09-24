@@ -450,7 +450,7 @@ export default function QuizPage() {
   return (
     <>
       <section className="page-header">
-        <h1>🐾 Person-Pet Quiz</h1>
+        <h1><img src="/business_assets/purrish_pet-07.png" alt="" className="inline-pet-icon" /> Person-Pet Quiz</h1>
         <p>Discover which pet matches your personality through our fun AI-powered quiz.</p>
         {import.meta.env.DEV && (
           <button className="btn btn-outline debug-launch-button" type="button" onClick={showDebugResult}>
@@ -470,7 +470,7 @@ export default function QuizPage() {
         <div className={`quiz-card ${submitted ? "quiz-card--result" : ""}`.trim()}>
           {adaptiveLoading ? (
             <div className="quiz-loading" role="status" aria-live="polite">
-              <div className="quiz-loading-paw" aria-hidden="true">🐾</div>
+              <img src="/business_assets/purrish_pet-06.png" alt="" className="quiz-loading-paw" />
               <p className="quiz-loading-kicker">A fresh question is taking shape</p>
               <h2>Thinking beyond the obvious...</h2>
               <p className="quiz-hint">Finding a curious little twist that feels like you.</p>
@@ -489,14 +489,14 @@ export default function QuizPage() {
             </div>
           ) : !currentQuestion ? (
             <div className="quiz-loading" role="status" aria-live="polite">
-              <div className="quiz-loading-paw" aria-hidden="true">🐾</div>
+              <img src="/business_assets/purrish_pet-06.png" alt="" className="quiz-loading-paw" />
               <p className="quiz-loading-kicker">A fresh question is taking shape</p>
               <h2>Thinking beyond the obvious...</h2>
               <p className="quiz-hint">Finding a curious little twist that feels like you.</p>
             </div>
           ) : isSubmitting ? (
             <div className="quiz-loading quiz-loading--matching" role="status" aria-live="polite">
-              <div className="quiz-loading-paw" aria-hidden="true">🐾</div>
+              <img src="/business_assets/purrish_pet-06.png" alt="" className="quiz-loading-paw" />
               <p className="quiz-loading-kicker">Your answers are in</p>
               <h2>Finding your perfect pet match...</h2>
               <p className="quiz-hint">We're comparing your personality with our breed knowledge base.</p>
@@ -508,7 +508,7 @@ export default function QuizPage() {
             </div>
           ) : submitted ? (
             <div className="quiz-result-panel">
-              <h2>🐾 Your Result Is Ready</h2>
+              <h2><img src="/business_assets/purrish_pet-06.png" alt="" className="inline-pet-icon" /> Your Result Is Ready</h2>
               <img src={displayResult.imageUrl} alt={displayResult.name || "Recommended pet"} className="quiz-result-image quiz-result-image--large" />
               <p className="result-eyebrow">Your personality match</p>
               <div className="result-heading-row">
@@ -566,7 +566,7 @@ export default function QuizPage() {
                 <ShareResultCard
                   title="Share your quiz result"
                   subtitle={`${displayResult.name} · ${matchStrengthLabel(displayResult.confidence || 0)}`}
-                  shareText={`🐾 The Purrish&Co. quiz says I'm a match for a ${displayResult.name}! Curious what pet fits YOU? Take the quiz! ✨`}
+                  shareText={`The Purrish&Co. quiz says I'm a match for a ${displayResult.name}! Curious what pet fits YOU? Take the quiz!`}
                   shareCaptions={displayResult.shareCaptions}
                   crossPromoText="Want to turn this personality into a personalized pet sticker?"
                   crossPromoPath="/pet"
