@@ -70,6 +70,13 @@ a {
     object-fit: contain;
 }
 
+.logo-brand {
+    display: block;
+    height: 40px;
+    max-width: 150px;
+    object-fit: contain;
+}
+
 .brand-text {
     color: var(--pink-dark);
     font-family: "Fredoka", sans-serif;
