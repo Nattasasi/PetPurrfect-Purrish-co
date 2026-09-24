@@ -52,7 +52,7 @@ async function loadAnalytics() {
     });
     $("analytics-status").textContent = failures
         ? "Some totals could not load. Check your connection, admin access, and Firestore index, then refresh."
-        : `Totals from ${start.toLocaleString()} to ${end.toLocaleString()}. Refresh to include new activity.`;
+        : `Totals from ${start.toLocaleString()} to ${end.toLocaleString()}.`;
 }
 
 const FUNNEL_STAGES = [
