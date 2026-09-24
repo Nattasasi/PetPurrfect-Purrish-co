@@ -13,7 +13,8 @@ export const env = {
     applicationDefault: Boolean(process.env.GOOGLE_APPLICATION_CREDENTIALS)
       || process.env.FIREBASE_USE_APPLICATION_DEFAULT === "true",
     quizResultsCollection: process.env.FIREBASE_QUIZ_RESULTS_COLLECTION || "quiz_results",
-    shareEventsCollection: process.env.FIREBASE_SHARE_EVENTS_COLLECTION || "share_events"
+    shareEventsCollection: process.env.FIREBASE_SHARE_EVENTS_COLLECTION || "share_events",
+    analyticsEventsCollection: process.env.FIREBASE_ANALYTICS_EVENTS_COLLECTION || "analytics_events"
   },
   ollama: {
     baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",

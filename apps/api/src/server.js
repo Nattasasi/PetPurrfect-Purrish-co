@@ -9,6 +9,7 @@ import quizRoute from "./routes/quiz.js";
 import ragRoute from "./routes/rag.js";
 import productsRoute from "./routes/products.js";
 import stickerRoute from "./routes/sticker.js";
+import analyticsRoute from "./routes/analytics.js";
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/api/quiz", quizRoute);
 app.use("/api/rag", ragRoute);
 app.use("/api/products", productsRoute);
 app.use("/api/sticker", stickerRoute);
+app.use("/api/analytics", analyticsRoute);
 
 if (process.env.SERVE_WEB === "true") {
   const root = fileURLToPath(new URL("../../../hosting/", import.meta.url));

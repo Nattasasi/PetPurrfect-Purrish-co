@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { trackShareEvent } from "../../lib/apiClient";
+import { trackShareResult } from "../../lib/analytics";
 
 // Builds a share URL with UTM attribution so we can measure which platform
 // actually brings new visitors back to the site.
@@ -96,6 +97,7 @@ export default function ShareResultCard({
       setCopyState("Copied");
       window.setTimeout(() => setCopyState("Copy link"), 1800);
       trackShareEvent(resultId, "copy");
+      trackShareResult(resultId, "copy", subtitle);
     } catch {
       setCopyState("Copy failed");
     }
@@ -130,6 +132,7 @@ export default function ShareResultCard({
             text: shareCaption(shareLink.platform, { includeUrl: true })
           });
           trackShareEvent(resultId, shareLink.platform);
+          trackShareResult(resultId, shareLink.platform, subtitle);
           return;
         }
       } catch (error) {
@@ -145,6 +148,7 @@ export default function ShareResultCard({
 
     // Fall back to web dialog for platforms without image share support
     trackShareEvent(resultId, shareLink.platform);
+    trackShareResult(resultId, shareLink.platform, subtitle);
     openShareLink(shareLink.url());
   };
 
