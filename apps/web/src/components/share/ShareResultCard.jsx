@@ -59,9 +59,6 @@ export default function ShareResultCard({
   // separate URL field (Instagram copy) to avoid burning the caption limit.
   const shareCaption = (source, { includeUrl = false } = {}) => {
     const lines = [selectedCaption];
-    if (crossPromoText) {
-      lines.push(crossPromoText);
-    }
     if (includeUrl) {
       lines.push(platformUrl(source));
     }
