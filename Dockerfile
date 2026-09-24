@@ -5,6 +5,7 @@ COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
 RUN npm ci --omit=dev --workspace apps/api && npm cache clean --force
 COPY apps/api/src apps/api/src
+COPY "apps/web/public/pet_breeds_COMPLETE_1 - Copy.xlsx" "apps/web/public/pet_breeds_COMPLETE_1 - Copy.xlsx"
 ENV NODE_ENV=production
 ENV PORT=8080
 USER node
