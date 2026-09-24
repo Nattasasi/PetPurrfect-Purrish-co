@@ -69,6 +69,7 @@ export async function getPublicQuizResult(id) {
       matchId: doc.matchId || null,
       matchName: doc.matchName || null,
       confidence: doc.confidence ?? null,
+      imageUrl: doc.imageUrl || null,
       topTraits: doc.topTraits || [],
       traits: doc.traits || {},
       shareCaptions: doc.shareCaptions || [],

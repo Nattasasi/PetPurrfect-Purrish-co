@@ -1010,6 +1010,35 @@ section h2{
     text-align:center;
 }
 
+.share-caption-copied-notification{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin:16px auto 0;
+    max-width:460px;
+    width:100%;
+    padding:12px 14px;
+    border:1px solid #c8e6c9;
+    border-radius:10px;
+    background:#f1f8f4;
+    color:#2d6a4f;
+    font-size:.95rem;
+    font-weight:500;
+    animation:fadeInOut 2s ease-in-out;
+    box-sizing:border-box;
+}
+
+.share-caption-copied-notification i{
+    color:#2d6a4f;
+}
+
+@keyframes fadeInOut{
+    0%{ opacity:1; }
+    85%{ opacity:1; }
+    100%{ opacity:0; }
+}
+
 .share-cross-promo p{
     margin:0;
     font-size:.9rem;

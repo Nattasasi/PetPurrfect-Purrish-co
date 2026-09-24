@@ -207,11 +207,44 @@ export default function StickerPage() {
     ? `My pet just got turned into a ${analysisResult.breed} sticker by Purrish&Co! ${capitalize(matchedPreset?.name || "playful")} coloring, ${detectedAttributes.faceShape || "round"} face, 100% adorable. Get yours free with every order!`
     : "";
 
+  // Set Open Graph meta tags for sticker results so link previews show the sticker image
+  useEffect(() => {
+    if (!isGenerated || !analysisResult?.validPet || !composedStickerUrl) {
+      return;
+    }
+
+    document.title = `${analysisResult.breed} Sticker | Purrish&Co.`;
+
+    // Remove existing OG meta tags
+    document.querySelectorAll('meta[property^="og:"]').forEach((tag) => tag.remove());
+
+    // Add new OG meta tags
+    const createMetaTag = (property, content) => {
+      const meta = document.createElement("meta");
+      meta.setAttribute("property", property);
+      meta.setAttribute("content", content);
+      document.head.appendChild(meta);
+    };
+
+    const title = `My ${analysisResult.breed} sticker from Purrish&Co.`;
+    const description = stickerShareCaption || `Check out my custom pet sticker created by Purrish&Co!`;
+
+    createMetaTag("og:title", title);
+    createMetaTag("og:description", description);
+    createMetaTag("og:image", composedStickerUrl);
+    createMetaTag("og:type", "website");
+    createMetaTag("og:url", window.location.href);
+
+    return () => {
+      // Cleanup: remove OG tags when component unmounts
+      document.querySelectorAll('meta[property^="og:"]').forEach((tag) => tag.remove());
+    };
+  }, [isGenerated, analysisResult, composedStickerUrl, stickerShareCaption]);
+
   const handleDownload = () => {
     exportStickerResultImage({
       title: "Purrish&Co. Sticker",
-      subtitle: "Your custom pet sticker",
-      petName: fileName ? fileName.replace(/\.[^/.]+$/, "") : "Your Pet",
+      breed: analysisResult?.breed || "Pet",
       imageUrl: composedStickerUrl || imageUrl
     });
   };
@@ -219,8 +252,7 @@ export default function StickerPage() {
   const getShareFile = () =>
     createStickerResultImageFile({
       title: "Purrish&Co. Sticker",
-      subtitle: "Your custom pet sticker",
-      petName: fileName ? fileName.replace(/\.[^/.]+$/, "") : "Your Pet",
+      breed: analysisResult?.breed || "Pet",
       imageUrl: composedStickerUrl || imageUrl
     });
 
@@ -347,6 +379,7 @@ export default function StickerPage() {
                 shareText={stickerShareCaption}
                 shareCaptions={shareCaptions}
                 captionsLoading={captionsLoading}
+                getShareFile={getShareFile}
                 crossPromoText="Want to discover your pet personality and unlock a themed version?"
                 crossPromoPath="/quiz"
               />

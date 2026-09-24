@@ -32,6 +32,7 @@ export default function ShareResultCard({
 }) {
   const [copyState, setCopyState] = useState("Copy link");
   const [isOpen, setIsOpen] = useState(false);
+  const [captionCopied, setCaptionCopied] = useState(false);
   const hasGeneratedCaptions = shareCaptions.length > 0;
   const captions = hasGeneratedCaptions ? shareCaptions : [shareText || subtitle || title];
   // While Ollama captions are still generating, hide the static fallback text
@@ -70,25 +71,18 @@ export default function ShareResultCard({
   // (image generation, navigator.share) makes popup blockers silently block the tab.
   const shareLinks = [
     {
-      label: "Facebook",
-      platform: "facebook",
-      icon: "fab fa-facebook-f",
-      url: () => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(platformUrl("facebook"))}`,
-      copyCaption: true
+      label: "Share",
+      platform: "social",
+      icon: "fas fa-share-nodes",
+      url: () => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(platformUrl("social"))}`,
+      copyCaption: true,
+      tryShareImage: true
     },
     {
       label: "X",
       platform: "x",
       icon: "fab fa-x-twitter",
       url: () => `https://twitter.com/intent/tweet?url=${encodeURIComponent(platformUrl("x"))}&text=${encodeURIComponent(shareCaption("x"))}`
-    },
-    // Instagram has no web share intent with a caption field, so copy the caption first.
-    {
-      label: "Instagram",
-      platform: "instagram",
-      icon: "fab fa-instagram",
-      url: () => "https://www.instagram.com/",
-      copyCaption: true
     }
   ];
 
@@ -109,38 +103,50 @@ export default function ShareResultCard({
 
   // Attaches the real generated image via the OS share sheet (Instagram, X, Messages, etc.),
   // where supported. Triggered by the dedicated native share button only.
-  const shareImageFile = async () => {
-    if (!getShareFile || !navigator.share || !navigator.canShare) {
-      return false;
-    }
-
-    try {
-      const file = await getShareFile();
-      if (!file || !navigator.canShare({ files: [file] })) {
-        return false;
-      }
-
-      await navigator.share({ files: [file], title, text: shareCaption("native"), url: platformUrl("native") });
-      trackShareEvent(resultId, "native");
-      return true;
-    } catch (error) {
-      return error?.name === "AbortError";
-    }
-  };
-
-  const handlePlatformShare = (shareLink) => {
+  const handlePlatformShare = async (shareLink) => {
+    // Copy caption to clipboard first (before any share attempt)
+    // This makes it available for platforms like Facebook/Instagram native apps
     if (shareLink.copyCaption) {
       navigator.clipboard
         .writeText(shareCaption(shareLink.platform, { includeUrl: true }))
+        .then(() => {
+          setCaptionCopied(true);
+          // Clear notification after 2 seconds
+          setTimeout(() => setCaptionCopied(false), 2000);
+        })
         .catch(() => {
           // Ignore clipboard restrictions; the platform tab still opens.
         });
     }
+
+    // Try to share the image file via OS share sheet for Instagram/Facebook on supported devices
+    if (shareLink.tryShareImage && getShareFile && navigator.share && navigator.canShare) {
+      try {
+        const file = await getShareFile();
+        if (file && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title,
+            text: shareCaption(shareLink.platform, { includeUrl: true })
+          });
+          trackShareEvent(resultId, shareLink.platform);
+          return;
+        }
+      } catch (error) {
+        // Silently fall through to web dialog if share fails or is aborted
+        if (error?.name !== "AbortError") {
+          // Non-abort errors still fall back to web dialog
+        } else {
+          // User cancelled the share
+          return;
+        }
+      }
+    }
+
+    // Fall back to web dialog for platforms without image share support
     trackShareEvent(resultId, shareLink.platform);
     openShareLink(shareLink.url());
   };
-
-  const canNativeShare = Boolean(getShareFile && navigator.share && navigator.canShare);
 
   useEffect(() => {
     if (!isOpen) {
@@ -201,30 +207,25 @@ export default function ShareResultCard({
                 </Link>
               </div>
             )}
+            {captionCopied && (
+              <div className="share-caption-copied-notification" role="status" aria-live="polite">
+                <i className="fas fa-check" aria-hidden="true" /> Caption copied to clipboard
+              </div>
+            )}
             <div className="share-result-actions">
               {shareLinks.map((shareLink) => (
                 <button
                   key={shareLink.label}
                   type="button"
                   className="share-icon-button"
-                  onClick={() => handlePlatformShare(shareLink)}
+                  onClick={() => handlePlatformShare(shareLink)} // supports both image and web fallback
                   aria-label={`Share on ${shareLink.label}`}
                   title={`Share on ${shareLink.label}`}
                 >
                   <i className={shareLink.icon} aria-hidden="true" />
                 </button>
               ))}
-              {canNativeShare && (
-                <button
-                  type="button"
-                  className="share-icon-button"
-                  onClick={shareImageFile}
-                  aria-label="Share image with more apps"
-                  title="Share image with more apps"
-                >
-                  <i className="fas fa-share-nodes" aria-hidden="true" />
-                </button>
-              )}
+
               <button type="button" className="share-text-button" onClick={copyLink}>
                 <i className="fas fa-link" aria-hidden="true" /> {copyState}
               </button>

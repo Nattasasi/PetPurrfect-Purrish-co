@@ -25,6 +25,7 @@ export async function saveQuizResult(payload) {
     matchId: payload.matchId || null,
     matchName: payload.matchName || null,
     confidence: payload.confidence ?? null,
+    imageUrl: payload.imageUrl || null,
     source: payload.source || "api",
     traits: payload.traits || {},
     topTraits: payload.topTraits || [],

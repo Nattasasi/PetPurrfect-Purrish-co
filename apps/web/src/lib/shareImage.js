@@ -108,16 +108,16 @@ function renderStickerResultCanvas(payload) {
       return;
     }
 
-    const petName = payload?.petName || "Your Pet";
+    const breed = payload?.breed || "Pet";
     const title = payload?.title || "Purrish&Co. Sticker";
-    const subtitle = payload?.subtitle || "Custom pet sticker preview";
+    const captionText = `this is my ${breed}!`;
 
     ctx.fillStyle = "#fff7f3";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = "#ffd8e4";
     ctx.beginPath();
-    ctx.arc(540, 430, 300, 0, Math.PI * 2);
+    ctx.arc(540, 480, 320, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = "#fff";
@@ -129,14 +129,7 @@ function renderStickerResultCanvas(payload) {
 
     ctx.fillStyle = "#333";
     ctx.font = "600 62px Poppins, sans-serif";
-    ctx.fillText(petName, 360, 790);
-
-    ctx.fillStyle = "#666";
-    ctx.font = "500 32px Poppins, sans-serif";
-    const subtitleLines = [subtitle.slice(0, 22), subtitle.slice(22, 44)].filter(Boolean);
-    subtitleLines.forEach((line, index) => {
-      ctx.fillText(line, 360, 860 + index * 44);
-    });
+    ctx.fillText(captionText, 360, 920);
 
     const finish = () => resolve(canvas);
 
@@ -148,20 +141,20 @@ function renderStickerResultCanvas(payload) {
     const stickerImage = new Image();
     stickerImage.crossOrigin = "anonymous";
     stickerImage.onload = () => {
-      const size = 420;
+      const size = 480;
       const x = 540 - size / 2;
-      const y = 250 - size / 2;
+      const y = 480 - size / 2;
 
       ctx.save();
       ctx.beginPath();
-      ctx.arc(540, 410, size / 2, 0, Math.PI * 2);
+      ctx.arc(540, 480, size / 2, 0, Math.PI * 2);
       ctx.clip();
       ctx.drawImage(stickerImage, x, y, size, size);
       ctx.restore();
 
       ctx.fillStyle = "#ffffff";
       ctx.beginPath();
-      ctx.arc(540, 410, size / 2 + 18, 0, Math.PI * 2);
+      ctx.arc(540, 480, size / 2 + 18, 0, Math.PI * 2);
       ctx.lineWidth = 12;
       ctx.strokeStyle = "#ffd7e5";
       ctx.stroke();
