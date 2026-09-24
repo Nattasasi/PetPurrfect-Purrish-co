@@ -72,6 +72,12 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /quiz_results/{resultId} {
+      // Writes only happen server-side via the Admin SDK, which bypasses rules.
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

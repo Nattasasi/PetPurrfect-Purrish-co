@@ -25,6 +25,7 @@
         <nav class="sidebar-nav" aria-label="Admin navigation">
             <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-table-cells-large"></i><span>Dashboard</span></button>
             <button class="nav-item" data-view="engagement"><i class="fa-solid fa-chart-line"></i><span>Engagement</span></button>
+            <button class="nav-item" data-view="insights"><i class="fa-solid fa-paw"></i><span>Insights</span></button>
             <button class="nav-item" data-view="messages"><i class="fa-solid fa-envelope"></i><span>Messages</span><b id="message-badge" class="nav-badge hidden">0</b></button>
         </nav>
         <div class="sidebar-footer">
@@ -116,6 +117,46 @@
                 <div class="panel-card">
                     <h3>Operating systems</h3>
                     <div id="breakdown-os" class="breakdown-list" aria-live="polite"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="admin-view" id="view-insights">
+            <div class="welcome-banner">
+                <div><span class="eyebrow">Quiz &amp; sticker results</span>
+                    <h2>Insights</h2>
+                    <p>Which breeds visitors match with, which sticker styles they generate, and how confident the matches are.</p>
+                </div>
+            </div>
+            <div class="section-toolbar">
+                <label for="insights-range">Activity period</label>
+                <select id="insights-range" class="select-control"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option></select>
+                <button id="insights-refresh" class="secondary-button">Refresh totals</button>
+            </div>
+            <p id="insights-status" role="status" aria-live="polite">Loading activity…</p>
+
+            <div class="metric-grid" aria-live="polite">
+                <article class="metric-card"><div class="metric-icon"><i class="fa-solid fa-clipboard-check"></i></div><div><span>Quiz Results Saved</span><p id="metric-quiz-results">Loading…</p></div></article>
+                <article class="metric-card"><div class="metric-icon"><i class="fa-solid fa-percent"></i></div><div><span>Avg. Match Confidence</span><p id="metric-avg-confidence">Loading…</p></div></article>
+                <article class="metric-card"><div class="metric-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div><span>Stickers Generated</span><p id="metric-sticker-count">Loading…</p></div></article>
+            </div>
+
+            <div class="engagement-panels">
+                <div class="panel-card">
+                    <h3>Match confidence trend</h3>
+                    <div id="confidence-trend" class="funnel-chart" aria-live="polite"></div>
+                </div>
+                <div class="panel-card">
+                    <h3>Top breed matches</h3>
+                    <div id="breakdown-breeds" class="breakdown-list" aria-live="polite"></div>
+                </div>
+                <div class="panel-card">
+                    <h3>Sticker styles generated</h3>
+                    <div id="breakdown-sticker-breeds" class="breakdown-list" aria-live="polite"></div>
+                </div>
+                <div class="panel-card">
+                    <h3>Top personality traits</h3>
+                    <div id="breakdown-traits" class="breakdown-list" aria-live="polite"></div>
                 </div>
             </div>
         </section>

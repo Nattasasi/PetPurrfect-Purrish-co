@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import staticQuizQuestions from "../data/quizQuestions.json";
 import { scoreQuiz } from "../lib/quizScoring";
 import { postJson, getJson, createSessionId } from "../lib/apiClient";
@@ -126,9 +127,14 @@ export default function QuizPage() {
   }, []);
 
   // Funnel: fires once per page visit, independent of whether the user ever answers.
+  // QuizPage stays mounted app-wide (toggled via `hidden`), so gate on the route actually being /quiz
+  // to avoid firing view_quiz when the app first loads on an unrelated page (e.g. /pet).
+  const location = useLocation();
   useEffect(() => {
-    trackViewQuiz();
-  }, []);
+    if (location.pathname === "/quiz") {
+      trackViewQuiz();
+    }
+  }, [location.pathname]);
 
   const currentQuestion = questions[currentIndex] || null;
   const selectedValue = currentQuestion ? answersById[currentQuestion.id] ?? "" : "";

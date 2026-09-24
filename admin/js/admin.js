@@ -15,10 +15,13 @@ const pending = new Set();
 
 const $ = (id) => document.getElementById(id);
 let analyticsRequest = 0;
-const metricTypes = {
-    "metric-visitors": "browser_session", "metric-quiz": "quiz_completion",
-    "metric-stickers": "sticker_generation", "metric-redirects": "shop_redirect"
-};
+// Website Visitors / Shop Redirect Clicks are dedup counters written by the legacy
+// ingestion-client.mjs into analytics_events (field: type, createdAt).
+const dedupMetricTypes = { "metric-visitors": "browser_session", "metric-redirects": "shop_redirect" };
+// Quiz Completions / Sticker Generations are only ever written by the current app into
+// funnel_events (field: eventType, timestamp) — nothing writes those types into analytics_events.
+const funnelMetricTypes = { "metric-quiz": "complete_quiz", "metric-stickers": "sticker_generation" };
+const metricIds = [...Object.keys(dedupMetricTypes), ...Object.keys(funnelMetricTypes)];
 
 async function loadAnalytics() {
     if (!currentAdmin) return;
@@ -28,25 +31,35 @@ async function loadAnalytics() {
     const end = new Date();
     const start = new Date(end.getTime() - days * 86400000);
     $("analytics-status").textContent = "Loading activity…";
-    Object.keys(metricTypes).forEach((id) => { $(id).textContent = "Loading…"; });
-    const results = await Promise.allSettled(Object.entries(metricTypes).map(async ([id, type]) => {
-        const activity = query(collection(db, "analytics_events"),
-            where("type", "==", type), where("createdAt", ">=", Timestamp.fromDate(start)),
-            where("createdAt", "<=", Timestamp.fromDate(end)));
-        // An unavailable network must not leave the dashboard loading indefinitely.
+    metricIds.forEach((id) => { $(id).textContent = "Loading…"; });
+    const startTs = Timestamp.fromDate(start);
+    const endTs = Timestamp.fromDate(end);
+    // An unavailable network must not leave the dashboard loading indefinitely.
+    const withTimeout = (promise) => {
         let timer;
-        try {
-            const snapshot = await Promise.race([
-                getCountFromServer(activity),
-                new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("timeout")), 15000); })
-            ]);
+        return Promise.race([
+            promise.finally(() => clearTimeout(timer)),
+            new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("timeout")), 15000); })
+        ]);
+    };
+    const results = await Promise.allSettled([
+        ...Object.entries(dedupMetricTypes).map(async ([id, type]) => {
+            const activity = query(collection(db, "analytics_events"),
+                where("type", "==", type), where("createdAt", ">=", startTs), where("createdAt", "<=", endTs));
+            const snapshot = await withTimeout(getCountFromServer(activity));
             return [id, snapshot.data().count];
-        } finally { clearTimeout(timer); }
-    }));
+        }),
+        ...Object.entries(funnelMetricTypes).map(async ([id, eventType]) => {
+            const activity = query(collection(db, "funnel_events"),
+                where("eventType", "==", eventType), where("timestamp", ">=", startTs), where("timestamp", "<=", endTs));
+            const snapshot = await withTimeout(getCountFromServer(activity));
+            return [id, snapshot.data().count];
+        })
+    ]);
     if (request !== analyticsRequest || session !== generation || !currentAdmin) return;
     let failures = 0;
     results.forEach((result, index) => {
-        const id = Object.keys(metricTypes)[index];
+        const id = metricIds[index];
         if (result.status === "rejected") { $(id).textContent = "Unavailable"; failures += 1; }
         else $(id).textContent = result.value[1] === 0 ? "0 — No activity" : result.value[1].toLocaleString();
     });
@@ -143,6 +156,107 @@ async function loadEngagement() {
         $("engagement-status").textContent = "Some totals could not load. Check your connection, admin access, and Firestore index, then refresh.";
     }
 }
+
+let insightsRequest = 0;
+
+function renderTrend(containerId, buckets) {
+    if (!buckets.length) {
+        $(containerId).innerHTML = emptyState("fa-chart-simple", "No activity yet", "The trend will appear once quiz results are saved.");
+        return;
+    }
+    $(containerId).innerHTML = buckets.map(({ label, avgConfidence, count }) => {
+        const pct = Math.round(avgConfidence * 100);
+        return "<div class=\"funnel-step\"><div class=\"funnel-step-label\"><span>" + escapeHtml(label) + " · " + count + " result" + (count === 1 ? "" : "s") + "</span><strong>" + pct + "%</strong></div><div class=\"funnel-step-track\"><div class=\"funnel-step-fill\" style=\"width:" + pct + "%\"></div></div></div>";
+    }).join("");
+}
+
+async function loadInsights() {
+    if (!currentAdmin) return;
+    const request = ++insightsRequest;
+    const session = generation;
+    const days = $("insights-range").value === "7" ? 7 : 30;
+    const end = new Date();
+    const start = new Date(end.getTime() - days * 86400000);
+    $("insights-status").textContent = "Loading activity…";
+    $("metric-quiz-results").textContent = "Loading…";
+    $("metric-avg-confidence").textContent = "Loading…";
+    $("metric-sticker-count").textContent = "Loading…";
+    $("confidence-trend").innerHTML = "";
+    ["breakdown-breeds", "breakdown-sticker-breeds", "breakdown-traits"].forEach((id) => { $(id).innerHTML = ""; });
+
+    try {
+        const startTs = Timestamp.fromDate(start);
+        const endTs = Timestamp.fromDate(end);
+
+        const resultsQuery = query(collection(db, "quiz_results"),
+            where("createdAt", ">=", startTs), where("createdAt", "<=", endTs), limit(2000));
+        const stickerQuery = query(collection(db, "funnel_events"),
+            where("eventType", "==", "sticker_generation"), where("timestamp", ">=", startTs), where("timestamp", "<=", endTs), limit(2000));
+
+        const [resultsSnapshot, stickerSnapshot] = await Promise.all([getDocs(resultsQuery), getDocs(stickerQuery)]);
+        if (request !== insightsRequest || session !== generation || !currentAdmin) return;
+
+        const results = resultsSnapshot.docs.map((item) => item.data());
+        const stickerEvents = stickerSnapshot.docs.map((item) => item.data());
+
+        const breedCounts = {};
+        const traitCounts = {};
+        const dayBuckets = new Map();
+        let confidenceSum = 0;
+        let confidenceCount = 0;
+
+        results.forEach((result) => {
+            if (result.matchName) breedCounts[result.matchName] = (breedCounts[result.matchName] || 0) + 1;
+            (result.topTraits || []).forEach((trait) => {
+                const key = trait?.key;
+                if (key) traitCounts[key] = (traitCounts[key] || 0) + 1;
+            });
+            if (typeof result.confidence === "number") {
+                confidenceSum += result.confidence;
+                confidenceCount += 1;
+                const date = toDate(result.createdAt);
+                if (date) {
+                    const dayKey = date.toISOString().slice(0, 10);
+                    const bucket = dayBuckets.get(dayKey) || { sum: 0, count: 0 };
+                    bucket.sum += result.confidence;
+                    bucket.count += 1;
+                    dayBuckets.set(dayKey, bucket);
+                }
+            }
+        });
+
+        const stickerBreedCounts = {};
+        stickerEvents.forEach((event) => {
+            const breed = event.properties?.breed;
+            if (breed) stickerBreedCounts[breed] = (stickerBreedCounts[breed] || 0) + 1;
+        });
+
+        $("metric-quiz-results").textContent = results.length === 0 ? "0 — No activity" : results.length.toLocaleString();
+        $("metric-avg-confidence").textContent = confidenceCount > 0 ? Math.round((confidenceSum / confidenceCount) * 100) + "%" : "—";
+        $("metric-sticker-count").textContent = stickerEvents.length === 0 ? "0 — No activity" : stickerEvents.length.toLocaleString();
+
+        const trendBuckets = [...dayBuckets.entries()]
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([dayKey, bucket]) => ({
+                label: new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(dayKey)),
+                avgConfidence: bucket.sum / bucket.count,
+                count: bucket.count
+            }));
+        renderTrend("confidence-trend", trendBuckets);
+
+        renderBreakdown("breakdown-breeds", breedCounts, results.length);
+        renderBreakdown("breakdown-sticker-breeds", stickerBreedCounts, stickerEvents.length);
+        renderBreakdown("breakdown-traits", traitCounts, results.length);
+
+        $("insights-status").textContent = results.length === 0 && stickerEvents.length === 0
+            ? "0 — No activity in this period."
+            : `Totals from ${start.toLocaleString()} to ${end.toLocaleString()}. Refresh to include new activity.`;
+    } catch (error) {
+        if (request !== insightsRequest || session !== generation) return;
+        console.error(error);
+        $("insights-status").textContent = "Some totals could not load. Check your connection, admin access, and Firestore index, then refresh.";
+    }
+}
 const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;",
     "<": "&lt;",
@@ -227,15 +341,16 @@ function closeSidebar() {
 }
 
 function switchView(requested) {
-    const name = ["dashboard", "engagement", "messages"].includes(requested) ? requested : "dashboard";
+    const name = ["dashboard", "engagement", "insights", "messages"].includes(requested) ? requested : "dashboard";
     document.querySelectorAll(".admin-view").forEach((view) => view.classList.toggle("active", view.id === `view-${name}`));
     document.querySelectorAll(".nav-item").forEach((item) => {
         item.classList.toggle("active", item.dataset.view === name);
         if (item.dataset.view === name) item.setAttribute("aria-current", "page");
         else item.removeAttribute("aria-current");
     });
-    $("view-title").textContent = name === "dashboard" ? "Dashboard" : name === "engagement" ? "Engagement" : "Messages";
+    $("view-title").textContent = name === "dashboard" ? "Dashboard" : name === "engagement" ? "Engagement" : name === "insights" ? "Insights" : "Messages";
     if (name === "engagement") void loadEngagement();
+    if (name === "insights") void loadInsights();
     history.replaceState(null, "", `#${name}`);
     closeSidebar();
 }
@@ -337,7 +452,7 @@ function renderNotifications() {
 
 function cleanup() {
     analyticsRequest += 1;
-    Object.keys(metricTypes).forEach((id) => { $(id).textContent = "Loading…"; });
+    metricIds.forEach((id) => { $(id).textContent = "Loading…"; });
     $("analytics-status").textContent = "Waiting for admin access…";
     generation += 1;
     stopMessages?.();
@@ -385,6 +500,7 @@ function startAdmin(user) {
         if (stopMessages) return;
         void loadAnalytics();
         if (location.hash.slice(1) === "engagement") void loadEngagement();
+        if (location.hash.slice(1) === "insights") void loadInsights();
         stopMessages = onSnapshot(collection(db, "messages"), (messages) => {
             if (session !== generation) return;
             state.messages = messages.docs.map((item) => ({ ...item.data(), id: item.id }))
@@ -423,6 +539,8 @@ $("analytics-range").addEventListener("change", loadAnalytics);
 $("analytics-refresh").addEventListener("click", loadAnalytics);
 $("engagement-range").addEventListener("change", loadEngagement);
 $("engagement-refresh").addEventListener("click", loadEngagement);
+$("insights-range").addEventListener("change", loadInsights);
+$("insights-refresh").addEventListener("click", loadInsights);
 $("message-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-view-message]");
     if (button) showMessageDetails(button.dataset.viewMessage);
