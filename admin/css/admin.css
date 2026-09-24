@@ -75,6 +75,7 @@ a {
     height: 120px;
     max-width: 450px;
     object-fit: contain;
+    margin-bottom: -20px;
 }
 
 .brand-text {
