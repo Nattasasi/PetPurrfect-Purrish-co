@@ -104,8 +104,13 @@ function containsAnimalReference(text) {
   return /\b(animal|animals|pet|pets|dog|dogs|cat|cats|breed|breeds|puppy|kitten|groom|grooming|feed|feeding|train|training|vet|veterinarian)\b/i.test(text);
 }
 
-function hasEmbeddedOptions(text) {
-  return /^\s*[A-D]\s*[):.]/m.test(text) || /\n\s*[A-D]\s*[):.]\s/m.test(text);
+function hasEmbeddedOptions(text, options = []) {
+  const listMarkerPattern = /(?:^|\n|\s)(?:[A-D]|[1-4])\s*[):.-]\s+/m;
+  const copiedOptionCount = options.filter((option) => {
+    const label = option?.label?.trim();
+    return label && text.toLowerCase().includes(label.toLowerCase());
+  }).length;
+  return listMarkerPattern.test(text) || copiedOptionCount >= 2;
 }
 
 function validateQuestions(rawQuestions, questionCount, questionOffset) {
@@ -114,8 +119,8 @@ function validateQuestions(rawQuestions, questionCount, questionOffset) {
   return rawQuestions.map((question, questionIndex) => {
     const questionText = question?.text || question?.question || question?.prompt;
     if (!question || typeof questionText !== "string" || !questionText.trim()) throw new Error("invalid_question_text");
-    if (hasEmbeddedOptions(questionText)) throw new Error("embedded_options_in_question_text");
     if (!Array.isArray(question.options) || question.options.length !== 4) throw new Error("invalid_question_options");
+    if (hasEmbeddedOptions(questionText, question.options)) throw new Error("embedded_options_in_question_text");
     const normalizedText = normalizeQuestionText(questionText);
     if (seenQuestionTexts.has(normalizedText)) throw new Error("duplicate_question_text");
     if (containsAnimalReference(questionText)) throw new Error("animal_reference_in_question");
