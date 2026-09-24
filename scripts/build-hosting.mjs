@@ -3,9 +3,8 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const output = path.join(root, "hosting");
-// Only this generated directory is removed. Never publish the repository root.
-await rm(output, { recursive: true, force: true });
+const output = path.join(root, "apps/web/dist");
+// Ensure output directory exists, then merge static files into React build output
 await mkdir(output, { recursive: true });
 const copy = (from, to = from) => cp(path.join(root, from), path.join(output, to), {
   recursive: true,
@@ -18,10 +17,8 @@ for (const file of [
 ]) {
   await copy(file);
 }
+// React build already produced index.html, assets/, pet_stickers/, models/ in apps/web/dist
+// Rename React's index.html to app.html to avoid conflict with static index.html, then add business_assets
 await copy("apps/web/dist/index.html", "app.html");
-await copy("apps/web/dist/assets", "assets");
-await copy("apps/web/dist/pet_stickers", "pet_stickers");
 await copy("apps/web/public/business_assets", "business_assets");
-await mkdir(path.join(output, "models"), { recursive: true });
-await copy("apps/web/dist/models/breed_classifier.onnx", "models/breed_classifier.onnx");
-console.log("Prepared hosting/: static site, admin, React routes, and browser assets only.");
+console.log("Merged static site, admin, and React routes into apps/web/dist.");
