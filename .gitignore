@@ -47,3 +47,4 @@ next-env.d.ts
 !/README-FIREBASE.md
 *-debug.log
 .firebase/
+hosting/

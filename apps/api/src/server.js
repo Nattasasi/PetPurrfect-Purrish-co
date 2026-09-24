@@ -41,7 +41,7 @@ app.use("/api/sticker", stickerRoute);
 app.use("/api/analytics", analyticsRoute);
 
 if (process.env.SERVE_WEB === "true") {
-  const root = fileURLToPath(new URL("../../../hosting/", import.meta.url));
+  const root = fileURLToPath(new URL("../../../apps/web/dist/", import.meta.url));
   app.use(express.static(root));
   app.get(["/quiz", "/quiz/*", "/pet", "/about", "/contact"], (_req, res) => res.sendFile(path.join(root, "app.html")));
   app.get("/admin/share", (_req, res) => res.redirect("/admin/index.html"));

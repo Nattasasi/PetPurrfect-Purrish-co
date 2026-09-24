@@ -113,7 +113,7 @@ export default function App() {
           <Route path="/quiz/result" element={<QuizResultPage />} />
           <Route path="/quiz/result/:id" element={<QuizResultPage />} />
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/admin/share" element={<a href="/admin/index.html">Open the admin dashboard</a>} />
+          <Route path="/admin/share" element={<a href="https://purperfect-admin.web.app/index.html">Open the admin dashboard</a>} />
         </Routes>
       </main>
 
