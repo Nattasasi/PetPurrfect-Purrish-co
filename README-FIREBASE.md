@@ -25,6 +25,103 @@ Open `http://localhost:3001/` and `http://localhost:3001/admin/login.html`. This
 
 For React hot reload, run `npm run dev:api` and `npm run dev:web` in separate terminals; open `http://localhost:5173/`. Vite proxies `/api` to port 3001. Use the full-site mode when testing transitions between the static site and React. A plain Python static server cannot serve the API or the React route fallbacks. Ports 5500/8000 on localhost retain an API fallback to `http://localhost:3001` for the static contact page.
 
+## Customer authentication foundation
+
+The React customer app now includes a headless `AuthProvider` and `useAuth()` in
+`apps/web/src/auth/AuthProvider.js`. It is mounted above the router and renders
+its children immediately, including while Firebase restores a session or is
+unavailable. There are no account pages, login buttons, redirects, or protected
+features yet. Quiz, stickers, contact, sharing, and shopping remain public.
+
+The existing `purperfect-169de` Firebase project is used for email/password
+accounts. The customer app uses the named Firebase app `purrishco-customer`, so
+its persisted session is separate from the admin site's default Firebase app,
+even on a shared local origin. The identity directory is still shared: an email
+already registered in this Firebase project cannot register a second account.
+Customer registration creates only a Firebase Authentication user. It does not
+create a Firestore profile, assign a role, save pet data, or write passwords to
+Firestore. Existing active-admin checks remain the authority for admin access.
+
+Before connecting a customer form, confirm **Authentication → Sign-in method →
+Email/Password** is enabled and that the customer site's domain and `localhost`
+are in Authentication's authorized domains. Review the project's password policy
+and verification/reset email templates. These settings are managed in Firebase;
+this code change does not deploy or modify them.
+
+Future React components can use:
+
+```js
+import { useAuth } from "../auth/AuthProvider.js";
+
+const {
+  user, loading, pending, error, clearError,
+  signUp, signIn, signOut, sendPasswordReset,
+  sendVerificationEmail, refreshUser, getIdToken
+} = useAuth();
+
+// Invoke from form handlers after deciding where accounts belong.
+await signUp({ email, password }); // Also signs the new account in.
+await signIn({ email, password });
+await sendVerificationEmail(); // Explicit step, separate from account creation.
+await refreshUser(); // Reload emailVerified after the email link is completed.
+await sendPasswordReset(email);
+await signOut();
+```
+
+`user` is `null` or a snapshot containing `uid`, `email`, `displayName`, `photoURL`,
+and `emailVerified`. `loading` covers initial session restoration; `pending`
+covers an account action. Actions reject with a friendly `Error` carrying a
+Firebase-style `code`; form handlers must catch the rejection. `error` also
+exposes the latest account-action failure. Duplicate account actions are blocked
+until the pending action finishes. Use a neutral reset confirmation such as
+“If an account uses this email, you will receive a reset link.”
+
+Firebase manages session storage and token renewal, with persistent browser
+storage preferred and session/memory fallbacks when storage is unavailable.
+`getIdToken()` waits for initial restoration and returns a fresh-enough Firebase
+ID token, or `null` when signed out. No token is added to existing public API calls.
+When introducing a protected API later, verify its bearer token server-side and
+apply that feature's authorization policy; checking `user` in React alone does
+not secure an API.
+
+Verification and reset use Firebase's hosted email-action handler. Sending a
+verification email is separate from sign-up so a delivery failure does not
+misreport a successfully created account as a failed registration. No feature
+currently requires a verified address; that policy can be chosen with placement.
+
+Validation:
+
+```sh
+npm run test:auth
+npm test
+npm run build:web
+firebase emulators:exec --only auth --project demo-purrishco --config firebase.auth.test.json "npm run test:auth:emulator"
+```
+
+The normal tests cover provider restoration, errors, duplicate submissions,
+sign-out, and StrictMode subscription cleanup. The emulator suite exercises real
+SDK sign-up/sign-in, invalid credentials, email verification, password reset,
+token retrieval, and isolation between customer and admin sessions. It refuses
+to run without a local Auth emulator and uses only the `demo-purrishco` project.
+Emulator email links are intercepted locally; these checks do not verify live
+email delivery or production Firebase settings.
+
+At implementation time, all 13 customer/client tests, the Auth emulator lifecycle
+test, and the production web build passed. The full `npm test` command is blocked
+by an existing API test importing the missing `createQuizEvaluationHandler`
+export from `apps/api/src/routes/quiz.js`; authentication does not change that
+quiz route or test.
+
+For later manual UI testing, start that Auth emulator and set
+`VITE_FIREBASE_AUTH_EMULATOR_URL=http://127.0.0.1:9099` for `npm run dev:web`. The
+development customer auth client switches to `demo-purrishco`; production builds
+ignore this variable. The setting affects authentication only, not the existing
+API or analytics storage. No test page is added to the customer website.
+
+References: [Firebase password authentication](https://firebase.google.com/docs/auth/web/password-auth),
+[session persistence](https://firebase.google.com/docs/auth/web/auth-state-persistence),
+[verification and reset emails](https://firebase.google.com/docs/auth/web/manage-users).
+
 ## Events and storage
 
 All four metrics use `analytics_events/{sha256(type + ':' + eventId)}`. Each document contains **only**:
