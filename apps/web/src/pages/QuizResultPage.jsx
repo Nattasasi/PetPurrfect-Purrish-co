@@ -194,7 +194,7 @@ export default function QuizResultPage() {
           <h2>Useful Next Steps</h2>
           <ul>
             <li>Share your result image with friends</li>
-            <li>Try the sticker generator for your pet photo</li>
+            <li>Try Purrify with your pet photo</li>
             <li>Compare a home-size cleanup pack with a compact travel pack below</li>
           </ul>
         </div>

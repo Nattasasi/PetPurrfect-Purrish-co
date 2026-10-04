@@ -132,7 +132,7 @@ function buildShareCaptionFallback(selected, context = "pet personality quiz") {
   return [
     `My Purrish&Co. quiz says I'm a match for a ${selected.name}. What pet matches you?`,
     `Apparently, my personality matches a ${selected.name}. Take the Purrish&Co. quiz and find yours!`,
-    `Would you get the same result? Discover your person-pet match with Purrish&Co.`
+    `Would you get the same result? Discover your Purrsonality match with Purrish&Co.`
   ];
 }
 
@@ -142,7 +142,7 @@ function buildShareCaptionPrompt(selected, traits, context = "pet personality qu
 Trusted facts:
 - Matched pet: ${selected.name}
 - User traits: ${JSON.stringify(traits)}
-- Product: Purrish&Co. person-pet quiz
+- Product: Purrish&Co. Purrsonality
 
 Rules:
 - Return JSON only in this exact shape: {"captions":["caption 1","caption 2","caption 3"]}

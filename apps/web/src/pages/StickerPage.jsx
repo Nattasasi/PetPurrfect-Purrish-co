@@ -262,7 +262,7 @@ export default function StickerPage() {
   return (
     <>
       <section className="page-header">
-        <h1><img src="/business_assets/purrish_pet-06.png" alt="" className="inline-pet-icon" /> For Your Pet</h1>
+        <h1><img src="/business_assets/purrish_pet-06.png" alt="" className="inline-pet-icon" /> Purrify</h1>
         <p>
           Upload a photo of your pet and receive a personalized sticker created
           just for them.

@@ -478,7 +478,7 @@ export default function QuizPage() {
   return (
     <>
       <section className="page-header">
-        <h1><img src="/business_assets/purrish_pet-07.png" alt="" className="inline-pet-icon" /> Person-Pet Quiz</h1>
+        <h1><img src="/business_assets/purrish_pet-07.png" alt="" className="inline-pet-icon" /> Purrsonality</h1>
         <p>Discover which pet matches your personality through our fun AI-powered quiz.</p>
         {import.meta.env.DEV && (
           <button className="btn btn-outline debug-launch-button" type="button" onClick={showDebugResult}>
