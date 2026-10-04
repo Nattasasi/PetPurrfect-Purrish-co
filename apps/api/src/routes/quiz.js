@@ -76,12 +76,20 @@ router.get("/breed-info/:id", async (req, res) => {
       external.source,
       region.currency
     );
-    const localizedPrice = await convertPriceRange(
-      extractExternalPrice(externalRecord),
-      region.currency
-    );
+    const [localizedPrice, localizedCareCost] = await Promise.all([
+      convertPriceRange(extractExternalPrice(externalRecord), region.currency),
+      convertPriceRange(breed.breedInfo.estimatedMonthlyCareCost, region.currency)
+    ]);
+    const regionalInfo = {
+      ...externalInfo,
+      estimatedMonthlyCareCost: localizedCareCost || (
+        breed.breedInfo.estimatedMonthlyCareCost?.currency === region.currency
+          ? breed.breedInfo.estimatedMonthlyCareCost
+          : null
+      )
+    };
     const info = mergeFreeBreedInfo(
-      localizedPrice ? { ...externalInfo, purchasePrice: localizedPrice } : externalInfo,
+      localizedPrice ? { ...regionalInfo, purchasePrice: localizedPrice } : regionalInfo,
       freeData
     );
 
@@ -152,6 +160,9 @@ function mergeExternalBreedInfo(localInfo, external, source, requestedCurrency =
     healthNote: typeof externalHealthNote === "string"
       ? externalHealthNote
       : (careParts.length > 0 ? careParts.join(" ") : localInfo.healthNote),
+    careConsiderations: typeof externalHealthNote === "string"
+      ? [{ category: "Health", text: externalHealthNote }]
+      : localInfo.careConsiderations,
     temperament: temperament || localInfo.temperament || null,
     purchasePrice: (minPrice !== null || maxPrice !== null)
       && currency

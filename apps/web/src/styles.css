@@ -1831,6 +1831,43 @@ section h2{
     margin:8px 0 0;
 }
 
+.breed-care-list{
+    display:grid;
+    gap:12px;
+    margin-top:14px;
+    padding:0;
+    list-style:none;
+}
+
+.breed-care-list li{
+    display:grid;
+    grid-template-columns:minmax(95px,120px) 1fr;
+    gap:14px;
+    align-items:start;
+    padding:14px 16px;
+    border:1px solid rgba(255,139,167,.2);
+    border-radius:14px;
+    background:#fff;
+    text-align:left;
+}
+
+.breed-care-list strong{
+    color:#9b4863;
+    font-size:.9rem;
+}
+
+.breed-care-list span{
+    color:#5f5659;
+    line-height:1.65;
+}
+
+@media(max-width:600px){
+    .breed-care-list li{
+        grid-template-columns:1fr;
+        gap:6px;
+    }
+}
+
 .breed-info-disclaimer{
     display:none;
 }

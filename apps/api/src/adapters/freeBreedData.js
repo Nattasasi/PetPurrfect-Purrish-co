@@ -3,6 +3,11 @@ const FRANKFURTER_URL = "https://api.frankfurter.dev/v2/rate";
 const DEFAULT_TIMEOUT_MS = 8000;
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const cache = new Map();
+const BRAVE_COUNTRIES = new Set([
+  "AR", "AU", "AT", "BE", "BR", "CA", "CL", "DK", "FI", "FR", "DE", "GR",
+  "HK", "IN", "ID", "IT", "JP", "KR", "MY", "MX", "NL", "NZ", "NO", "CN",
+  "PL", "PT", "PH", "RU", "SA", "ZA", "ES", "SE", "CH", "TW", "TR", "GB", "US"
+]);
 
 const COUNTRY_CURRENCY = {
   AU: "AUD", CA: "CAD", GB: "GBP", IN: "INR", JP: "JPY", MY: "MYR",
@@ -77,24 +82,24 @@ async function fetchBraveResults(name, region, fetchImpl) {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY;
   if (!apiKey) return [];
 
-  const query = [`"${name}"`, "adoption rescue shelter price", region.location].filter(Boolean).join(" ");
-  const body = {
+  const query = [name, "adoption rescue shelter", region.location].filter(Boolean).join(" ");
+  const params = new URLSearchParams({
     q: query,
-    count: 8,
+    count: "8",
     safesearch: "strict",
     search_lang: region.language
-  };
-  if (region.country) body.country = region.country;
+  });
+  // Brave supports only a fixed country list. The location remains in the
+  // search query when the visitor's country (for example Thailand) is absent.
+  if (BRAVE_COUNTRIES.has(region.country)) params.set("country", region.country);
 
   try {
-    const response = await fetchWithTimeout(BRAVE_SEARCH_URL, {
-      method: "POST",
+    const response = await fetchWithTimeout(`${BRAVE_SEARCH_URL}?${params.toString()}`, {
+      method: "GET",
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/json",
         "X-Subscription-Token": apiKey
-      },
-      body: JSON.stringify(body)
+      }
     }, fetchImpl);
     if (!response.ok) return [];
     const payload = await response.json();
@@ -162,6 +167,7 @@ export async function convertPriceRange(price, requestedCurrency, dependencies =
 
   const convert = (amount) => Number.isFinite(amount) ? Math.round(amount * rate) : null;
   return {
+    ...price,
     min: convert(price.min),
     max: convert(price.max),
     currency: to,

@@ -26,7 +26,13 @@ test("free breed data uses Brave adoption results without claiming live availabi
       timeZone: "Asia/Bangkok",
       locale: "en-US"
     }, {
-      fetchImpl: async () => ({
+      fetchImpl: async (url, options) => {
+        assert.match(url, /^https:\/\/api\.search\.brave\.com\/res\/v1\/web\/search\?/);
+        assert.match(url, /q=/);
+        assert.doesNotMatch(url, /country=TH/);
+        assert.equal(options.method, "GET");
+        assert.equal(options.body, undefined);
+        return {
           ok: true,
           json: async () => ({
             web: {
@@ -37,7 +43,8 @@ test("free breed data uses Brave adoption results without claiming live availabi
               }]
             }
           })
-        })
+        };
+      }
     });
 
     assert.equal(result.region.currency, "THB");

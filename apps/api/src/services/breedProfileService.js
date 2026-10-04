@@ -31,6 +31,38 @@ function numericOrNull(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function truncateAtWord(value, maxLength = 1200) {
+  const normalized = String(value || '').replace(/\s+/g, ' ').trim();
+  if (normalized.length <= maxLength) return normalized;
+  const shortened = normalized.slice(0, maxLength + 1);
+  const lastSpace = shortened.lastIndexOf(' ');
+  return `${shortened.slice(0, lastSpace > maxLength * 0.8 ? lastSpace : maxLength).trim()}…`;
+}
+
+export function normalizeCareNote(value) {
+  return truncateAtWord(value)
+    .replace(/\s*Factor in ongoing grooming costs\s*\([^)]*(?:\/month|monthly)[^)]*\)\.?\s*/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function buildCareConsiderations(value) {
+  const normalized = normalizeCareNote(value);
+  if (!normalized) return [];
+
+  return normalized
+    .split(/(?=⚠️)|(?=\bNote:\s*)/i)
+    .map((part) => part.replace(/^⚠️\s*/, '').replace(/^Note:\s*/i, '').trim())
+    .filter(Boolean)
+    .map((text) => {
+      let category = 'General care';
+      if (/social|separation|companionship|left alone|family/i.test(text)) category = 'Lifestyle';
+      else if (/health|brachy|breath|heat|dental|joint|medical|prone|condition/i.test(text)) category = 'Health';
+      else if (/groom|coat|brush|fur|facial cleaning/i.test(text)) category = 'Grooming';
+      return { category, text };
+    });
+}
+
 function slugify(value) {
   return String(value)
     .toLowerCase()
@@ -159,6 +191,8 @@ function parseWorkbookBreeds() {
       const adaptability = numberInRange(row.adaptability_norm ?? Number(row.adaptability) / 5);
       const intelligence = numberInRange(row.intelligence_norm ?? Number(row.intelligence) / 5);
       const strangerFriendly = numberInRange(row.stranger_friendly_norm);
+      const guardianNote = normalizeCareNote(row.guardian_note);
+      const monthlyCareCostInr = numericOrNull(row['Avg total_monthly_cost_inr']);
 
       return {
         id: slugify(row.breed_name),
@@ -172,12 +206,17 @@ function parseWorkbookBreeds() {
           height: row.height || null,
           weight: row.weight || null,
           temperament: row.personality_traits || null,
-          healthNote: row.guardian_note ? String(row.guardian_note).slice(0, 500) : null,
+          healthNote: guardianNote || null,
+          careConsiderations: buildCareConsiderations(row.guardian_note),
           exerciseMinutesDaily: numericOrNull(row['Avg exercise_minutes_daily']),
           groomingHoursMonthly: numericOrNull(row['Avg grooming_hours_monthly']),
-          // The workbook's cost estimate is INR-only and is not shown as a
-          // local price. A provider must supply a location and currency.
-          estimatedMonthlyCareCost: null,
+          estimatedMonthlyCareCost: monthlyCareCostInr === null ? null : {
+            min: monthlyCareCostInr,
+            max: monthlyCareCostInr,
+            currency: 'INR',
+            period: 'month',
+            source: 'local-breed-workbook'
+          },
           purchasePrice: null,
           adoption: {
             available: null,

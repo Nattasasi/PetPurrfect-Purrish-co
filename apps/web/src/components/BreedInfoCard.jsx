@@ -38,13 +38,24 @@ export default function BreedInfoCard({ breedId, breedName }) {
             <div><strong>Temperament</strong><span>{breedInfo.info.temperament || "Not available"}</span></div>
             <div><strong>Exercise</strong><span>{breedInfo.info.exerciseMinutesDaily ? `${breedInfo.info.exerciseMinutesDaily} min/day` : "Not available"}</span></div>
             <div><strong>Grooming</strong><span>{breedInfo.info.groomingHoursMonthly ? `${breedInfo.info.groomingHoursMonthly} hr/month` : "Not available"}</span></div>
-            <div><strong>Price range</strong><span>{breedInfo.info.purchasePrice ? formatPriceRange(breedInfo.info.purchasePrice) : (breedInfo.info.priceResearchUrl ? <a href={breedInfo.info.priceResearchUrl} target="_blank" rel="noreferrer">Check current local prices</a> : "Not available")}</span></div>
+            <div><strong>Purchase price</strong><span>{breedInfo.info.purchasePrice ? formatPriceRange(breedInfo.info.purchasePrice) : (breedInfo.info.priceResearchUrl ? <a href={breedInfo.info.priceResearchUrl} target="_blank" rel="noreferrer">Check current local prices</a> : "Not available")}</span></div>
+            <div><strong>Monthly care estimate</strong><span>{breedInfo.info.estimatedMonthlyCareCost ? `≈ ${formatPriceRange(breedInfo.info.estimatedMonthlyCareCost)} / month` : "Not available"}</span></div>
             <div><strong>Adoption</strong><span>{breedInfo.info.adoption?.url ? <a href={breedInfo.info.adoption.url} target="_blank" rel="noreferrer">View current listings{breedInfo.info.adoption.location ? ` in ${breedInfo.info.adoption.location}` : ""}</a> : (breedInfo.info.adoption?.message || "Live listings unavailable")}</span></div>
           </div>
-          {breedInfo.info.healthNote && (
+          {(breedInfo.info.careConsiderations?.length > 0 || breedInfo.info.healthNote) && (
             <details className="breed-info-note">
               <summary>Care considerations</summary>
-              <p>{breedInfo.info.healthNote}</p>
+              <ul className="breed-care-list">
+                {(breedInfo.info.careConsiderations?.length > 0
+                  ? breedInfo.info.careConsiderations
+                  : [{ category: "General care", text: breedInfo.info.healthNote }]
+                ).map((item, index) => (
+                  <li key={`${item.category}-${index}`}>
+                    <strong>{item.category}</strong>
+                    <span>{item.text}</span>
+                  </li>
+                ))}
+              </ul>
             </details>
           )}
           {breedInfo.info.sources?.length > 0 && (
@@ -71,8 +82,26 @@ export default function BreedInfoCard({ breedId, breedName }) {
 }
 
 function formatPriceRange(price) {
-  if (!price || (!price.min && !price.max)) return "Not available";
-  const currency = price.currency ? ` ${price.currency}` : "";
-  if (price.min && price.max) return `${price.min.toLocaleString()}–${price.max.toLocaleString()}${currency}`;
-  return `${(price.min || price.max).toLocaleString()}+${currency}`;
+  const minimum = Number.isFinite(price?.min) ? price.min : null;
+  const maximum = Number.isFinite(price?.max) ? price.max : null;
+  if (minimum === null && maximum === null) return "Not available";
+  if (minimum !== null && maximum !== null && minimum === maximum) return formatCurrency(minimum, price.currency);
+  if (minimum !== null && maximum !== null) {
+    return `${formatCurrency(minimum, price.currency)}–${formatCurrency(maximum, price.currency)}`;
+  }
+  return `${formatCurrency(minimum ?? maximum, price.currency)}+`;
+}
+
+function formatCurrency(amount, currency) {
+  if (!currency) return amount.toLocaleString();
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+      maximumFractionDigits: 0
+    }).format(amount);
+  } catch {
+    return `${amount.toLocaleString()} ${currency}`;
+  }
 }
