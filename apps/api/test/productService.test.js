@@ -12,5 +12,6 @@ test("managed product catalog exposes real THB Shopee products without stale pri
     assert.equal(product.currency, "THB");
     assert.equal(product.price, null);
     assert.match(product.priceLabel, /live THB price/i);
+    assert.match(product.imageUrl, /^\/business_assets\/product_pictures\/web\/[a-z0-9-]+\.jpg$/);
   }
 });

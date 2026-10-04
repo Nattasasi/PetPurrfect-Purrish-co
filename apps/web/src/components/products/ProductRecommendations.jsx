@@ -40,7 +40,14 @@ export default function ProductRecommendations({
           {catalog.products.slice(0, context === "home" ? 4 : 2).map((product) => (
             <article className="product-card catalog-product-card" key={product.id}>
               {product.imageUrl ? (
-                <img src={product.imageUrl} alt={product.name} />
+                <img
+                  src={product.imageUrl}
+                  alt={`${product.name} by Purrish&Co.`}
+                  loading="lazy"
+                  decoding="async"
+                  width="1200"
+                  height="1200"
+                />
               ) : (
                 <div className="product-card-placeholder" aria-hidden="true">
                   <img src="/business_assets/purrish_pet-08.png" alt="" />
