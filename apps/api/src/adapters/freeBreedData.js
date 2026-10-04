@@ -1,5 +1,4 @@
 const BRAVE_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search";
-const RESCUE_GROUPS_URL = "https://api.rescuegroups.org/v5/public/animals/search/available/";
 const FRANKFURTER_URL = "https://api.frankfurter.dev/v2/rate";
 const DEFAULT_TIMEOUT_MS = 8000;
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -105,65 +104,6 @@ async function fetchBraveResults(name, region, fetchImpl) {
   }
 }
 
-function relatedIncluded(payload, animal, type) {
-  const relationshipData = animal?.relationships?.[type]?.data;
-  const related = Array.isArray(relationshipData)
-    ? relationshipData
-    : (relationshipData ? [relationshipData] : []);
-  const ids = new Set(related.map((item) => String(item.id)));
-  return (payload?.included || []).filter((item) => item.type === type && ids.has(String(item.id)));
-}
-
-function rescueListing(payload, animal) {
-  const attributes = animal?.attributes || {};
-  const locations = relatedIncluded(payload, animal, "locations");
-  const organizations = relatedIncluded(payload, animal, "orgs");
-  const location = locations[0]?.attributes || {};
-  const organization = organizations[0]?.attributes || {};
-  return {
-    title: clean(`${attributes.name || "Adoptable pet"} — ${organization.name || attributes.breedString || "RescueGroups"}`),
-    url: validUrl(attributes.url || organization.adoptionUrl || organization.url),
-    fee: clean(attributes.adoptionFeeString, 80) || null,
-    location: clean(location.citystate || [location.city, location.state, location.country].filter(Boolean).join(", "))
-  };
-}
-
-function locationMatches(listing, requestedLocation) {
-  if (!requestedLocation) return true;
-  const requested = requestedLocation.toLowerCase().split(/[^a-z0-9]+/).filter((part) => part.length > 2);
-  const actual = listing.location.toLowerCase();
-  return requested.some((part) => actual.includes(part));
-}
-
-async function fetchRescueGroups(name, region, fetchImpl) {
-  const apiKey = process.env.RESCUEGROUPS_API_KEY;
-  if (!apiKey) return [];
-
-  try {
-    const response = await fetchWithTimeout(`${RESCUE_GROUPS_URL}?limit=10&include=locations,orgs`, {
-      method: "POST",
-      headers: {
-        Accept: "application/vnd.api+json",
-        "Content-Type": "application/vnd.api+json",
-        Authorization: apiKey
-      },
-      body: JSON.stringify({
-        data: {
-          filters: [{ fieldName: "animals.breedString", operation: "contains", criteria: name }]
-        }
-      })
-    }, fetchImpl);
-    if (!response.ok) return [];
-    const payload = await response.json();
-    return (payload?.data || [])
-      .map((animal) => rescueListing(payload, animal))
-      .filter((listing) => listing.url && locationMatches(listing, region.location))
-      .slice(0, 5);
-  } catch {
-    return [];
-  }
-}
-
 export async function fetchFreeBreedData(name, options = {}, dependencies = {}) {
   const fetchImpl = dependencies.fetchImpl || fetch;
   const region = resolveRegionalContext(options);
@@ -171,35 +111,26 @@ export async function fetchFreeBreedData(name, options = {}, dependencies = {}) 
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.createdAt < CACHE_TTL_MS) return cached.value;
 
-  const [rescueListings, braveResults] = await Promise.all([
-    fetchRescueGroups(name, region, fetchImpl),
-    fetchBraveResults(name, region, fetchImpl)
-  ]);
+  const braveResults = await fetchBraveResults(name, region, fetchImpl);
   const adoptionPattern = /adopt|rescue|shelter|rehom/i;
   const braveAdoption = braveResults.find((item) => adoptionPattern.test(`${item.title} ${item.description} ${item.url}`));
   const adoptionQuery = [name, "adoption rescue", region.location].filter(Boolean).join(" ");
   const priceQuery = [name, "price", region.location, region.currency].filter(Boolean).join(" ");
-  const rescue = rescueListings[0];
-  const adoptionUrl = rescue?.url || validUrl(braveAdoption?.url) || searchUrl(adoptionQuery);
-  const sources = sourceList([
-    ...rescueListings,
-    ...braveResults.slice(0, 5)
-  ]);
+  const adoptionUrl = validUrl(braveAdoption?.url) || searchUrl(adoptionQuery);
+  const sources = sourceList(braveResults.slice(0, 5));
 
   const value = {
     region,
     adoption: {
-      available: rescue ? true : null,
+      available: null,
       url: adoptionUrl,
-      message: rescue
-        ? `A current listing was found${rescue.fee ? `; listed fee: ${rescue.fee}` : ""}.`
-        : `Search current shelters and rescues${region.location ? ` near ${region.location}` : ""}.`,
-      location: rescue?.location || region.location || null,
-      provider: rescue ? "RescueGroups" : (braveAdoption ? "Brave Search" : "search-link")
+      message: `Search current shelters and rescues${region.location ? ` near ${region.location}` : ""}.`,
+      location: region.location || null,
+      provider: braveAdoption ? "Brave Search" : "search-link"
     },
     priceResearchUrl: searchUrl(priceQuery),
     sources,
-    source: rescue ? "rescuegroups" : (braveResults.length ? "brave-search" : "search-link")
+    source: braveResults.length ? "brave-search" : "search-link"
   };
   cache.set(cacheKey, { createdAt: Date.now(), value });
   return value;

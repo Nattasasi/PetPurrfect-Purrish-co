@@ -17,61 +17,39 @@ test("regional context prefers timezone over a mismatched browser locale", () =>
   });
 });
 
-test("free breed data prefers a matching live rescue listing", async () => {
+test("free breed data uses Brave adoption results without claiming live availability", async () => {
   const originalBraveKey = process.env.BRAVE_SEARCH_API_KEY;
-  const originalRescueKey = process.env.RESCUEGROUPS_API_KEY;
   process.env.BRAVE_SEARCH_API_KEY = "brave-test";
-  process.env.RESCUEGROUPS_API_KEY = "rescue-test";
 
   try {
     const result = await fetchFreeBreedData("Test Retriever Free", {
       timeZone: "Asia/Bangkok",
       locale: "en-US"
     }, {
-      fetchImpl: async (url) => {
-        if (url.startsWith("https://api.rescuegroups.org")) {
-          return {
-            ok: true,
-            json: async () => ({
-              data: [{
-                type: "animals",
-                id: "1",
-                attributes: {
-                  name: "Sunny",
-                  breedString: "Test Retriever Free",
-                  adoptionFeeString: "THB 2,000",
-                  url: "https://example.org/adopt/sunny"
-                },
-                relationships: { locations: { data: [{ type: "locations", id: "10" }] } }
-              }],
-              included: [{
-                type: "locations",
-                id: "10",
-                attributes: { city: "Bangkok", country: "Thailand" }
-              }]
-            })
-          };
-        }
-        return {
+      fetchImpl: async () => ({
           ok: true,
           json: async () => ({
-            web: { results: [{ title: "Breed guide", url: "https://example.com/guide" }] }
+            web: {
+              results: [{
+                title: "Test Retriever adoption in Bangkok",
+                description: "Search local shelters",
+                url: "https://example.org/adopt/test-retriever"
+              }]
+            }
           })
-        };
-      }
+        })
     });
 
     assert.equal(result.region.currency, "THB");
-    assert.equal(result.adoption.available, true);
-    assert.equal(result.adoption.provider, "RescueGroups");
-    assert.equal(result.adoption.url, "https://example.org/adopt/sunny");
-    assert.match(result.adoption.message, /THB 2,000/);
+    assert.equal(result.adoption.available, null);
+    assert.equal(result.adoption.provider, "Brave Search");
+    assert.equal(result.adoption.url, "https://example.org/adopt/test-retriever");
+    assert.match(result.adoption.message, /near Bangkok/);
+    assert.equal(result.source, "brave-search");
     assert.match(result.priceResearchUrl, /search\.brave\.com/);
   } finally {
     if (originalBraveKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY;
     else process.env.BRAVE_SEARCH_API_KEY = originalBraveKey;
-    if (originalRescueKey === undefined) delete process.env.RESCUEGROUPS_API_KEY;
-    else process.env.RESCUEGROUPS_API_KEY = originalRescueKey;
   }
 });
 
@@ -92,4 +70,3 @@ test("Frankfurter converts a provider price into the requested currency", async 
     source: "test-provider;frankfurter"
   });
 });
-
