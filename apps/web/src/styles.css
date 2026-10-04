@@ -127,6 +127,19 @@ header{
     width:50%;
 }
 
+.hero--business{
+    justify-content:center;
+    text-align:center;
+}
+
+.hero--business .hero-text{
+    width:min(820px,100%);
+}
+
+.hero--business .hero-buttons{
+    justify-content:center;
+}
+
 .badge{
     display:inline-block;
     background:var(--secondary);
@@ -343,6 +356,140 @@ section h2{
 
 .product-card button:hover{
     background:#ff6f94;
+}
+
+.catalog-section{
+    background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,246,248,.85));
+}
+
+.catalog-heading{
+    max-width:760px;
+    margin:0 auto 42px;
+    text-align:center;
+}
+
+.catalog-heading h2{
+    margin:8px 0 14px;
+}
+
+.catalog-heading p{
+    color:#666;
+    line-height:1.75;
+}
+
+.catalog-kicker{
+    display:inline-block;
+    color:#a53d5b;
+    font-size:.82rem;
+    font-weight:700;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+}
+
+.catalog-grid{
+    max-width:1240px;
+    margin:0 auto;
+}
+
+.catalog-product-card{
+    display:flex;
+    flex-direction:column;
+    border:1px solid rgba(255,139,167,.22);
+}
+
+.product-card-placeholder{
+    height:220px;
+    display:grid;
+    place-items:center;
+    background:
+        radial-gradient(circle at 20% 20%,rgba(255,230,154,.7),transparent 35%),
+        linear-gradient(135deg,#ffe7ed,#fff8f4);
+}
+
+.product-card .product-card-placeholder img{
+    width:145px;
+    height:145px;
+    object-fit:contain;
+    filter:drop-shadow(0 12px 18px rgba(126,57,67,.12));
+}
+
+.catalog-product-body{
+    display:flex;
+    flex:1;
+    flex-direction:column;
+    align-items:flex-start;
+    padding:24px;
+}
+
+.product-card .catalog-product-body h3{
+    padding:10px 0 3px;
+    text-align:left;
+    font-size:1.35rem;
+}
+
+.product-card .catalog-product-body p{
+    text-align:left;
+    line-height:1.65;
+}
+
+.catalog-use-case{
+    display:inline-flex;
+    padding:6px 11px;
+    border-radius:999px;
+    background:#fff0f4;
+    color:#a53d5b;
+    font-size:.76rem;
+    font-weight:700;
+    letter-spacing:.03em;
+}
+
+.product-card .catalog-name-th{
+    min-height:1.5em;
+    margin-bottom:13px;
+    color:#8b6670;
+    font-size:.88rem;
+}
+
+.product-card .catalog-pack-size{
+    margin-top:14px;
+    color:#444;
+    font-size:.9rem;
+    font-weight:600;
+}
+
+.catalog-product-body .price{
+    margin:12px 0 18px;
+    font-size:1rem;
+}
+
+.catalog-shop-link{
+    width:100%;
+    max-width:100%;
+    margin-top:auto;
+    text-align:center;
+}
+
+.catalog-live-note,
+.catalog-status{
+    max-width:850px;
+    margin:28px auto 0;
+    color:#755f65;
+    font-size:.88rem;
+    line-height:1.65;
+    text-align:center;
+}
+
+.catalog-status{
+    min-height:120px;
+}
+
+.shop-confidence{
+    background:#fff8f4;
+}
+
+.shop-confidence-grid{
+    max-width:1100px;
+    margin:0 auto;
 }
 
 
@@ -1175,6 +1322,126 @@ section h2{
     margin-top:0;
 }
 
+.quiz-debug-breakdown{
+    width:min(100%,720px);
+    margin:26px auto 0;
+    padding:20px;
+    border:1px solid #eadbe2;
+    border-radius:18px;
+    background:#fff;
+    box-shadow:0 8px 24px rgba(100,55,75,.07);
+    box-sizing:border-box;
+    text-align:left;
+}
+
+.quiz-debug-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:16px;
+}
+
+.quiz-debug-header span{
+    display:block;
+    margin-bottom:3px;
+    color:#a27688;
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+
+.quiz-debug-header h4{
+    margin:0;
+    color:#3f3438;
+    font-size:1.15rem;
+}
+
+.quiz-debug-header i{
+    display:grid;
+    place-items:center;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    background:#fff1f5;
+    color:#d95179;
+}
+
+.quiz-debug-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+}
+
+.quiz-debug-panel,
+.quiz-debug-top-traits{
+    padding:14px;
+    border:1px solid #f0e2e7;
+    border-radius:14px;
+    background:#fffafd;
+}
+
+.quiz-debug-top-traits{
+    margin-top:12px;
+}
+
+.quiz-debug-label{
+    margin:0 0 10px;
+    color:#8a4b66;
+    font-size:.78rem;
+    font-weight:800;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+}
+
+.quiz-debug-list{
+    display:grid;
+    gap:7px;
+    margin:0;
+    padding:0;
+    list-style:none;
+}
+
+.quiz-debug-list li{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin:0;
+    color:#62565a;
+    font-size:.86rem;
+}
+
+.quiz-debug-list strong{
+    min-width:52px;
+    padding:3px 8px;
+    border-radius:999px;
+    background:#f8e8ee;
+    color:#8a4b66;
+    font-size:.78rem;
+    text-align:center;
+}
+
+.quiz-debug-list--compact{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.quiz-debug-list--compact li{
+    flex:1 1 150px;
+    padding:8px 10px;
+    border-radius:10px;
+    background:#fff;
+}
+
+@media (max-width:640px){
+    .quiz-debug-grid{
+        grid-template-columns:1fr;
+    }
+}
+
 .quiz-card h2{
     margin-bottom:35px;
 }
@@ -1485,6 +1752,87 @@ section h2{
 
 .info-card ul{
     list-style:none;
+}
+
+.breed-info-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:10px;
+    margin:0 0 16px;
+}
+
+.breed-info-card{
+    margin:28px auto;
+    padding:24px 26px;
+    border:1px solid #eadbe2;
+    border-radius:18px;
+    background:#fff;
+    box-shadow:0 8px 24px rgba(100,55,75,.08);
+    text-align:left;
+}
+
+.breed-info-card h2{
+    margin:0 0 6px;
+    text-align:left;
+    font-size:1.35rem;
+}
+
+.breed-info-card::after{
+    content:"General breed guide · local prices and adoption availability may vary";
+    display:block;
+    margin-top:16px;
+    color:#947684;
+    font-size:.78rem;
+}
+
+.breed-info-grid > div{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding:11px 12px;
+    border:1px solid #f0dbe3;
+    border-radius:12px;
+    background:#fffafd;
+}
+
+.breed-info-grid strong{
+    color:#8a4b66;
+    font-size:.85rem;
+}
+
+.breed-info-grid span{
+    color:#555;
+    font-size:.95rem;
+}
+
+.breed-info-note,
+.breed-info-sources,
+.breed-info-disclaimer{
+    color:#666;
+    line-height:1.6;
+}
+
+.breed-info-sources a{
+    color:#9d4968;
+    font-weight:600;
+}
+
+.breed-info-note{
+    margin:0 0 12px;
+}
+
+.breed-info-note summary{
+    cursor:pointer;
+    color:#8a4b66;
+    font-weight:700;
+}
+
+.breed-info-note p{
+    margin:8px 0 0;
+}
+
+.breed-info-disclaimer{
+    display:none;
 }
 
 .info-card li{

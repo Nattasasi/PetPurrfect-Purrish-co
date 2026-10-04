@@ -1,6 +1,10 @@
 import dotenv from "dotenv";
+import { fileURLToPath } from "node:url";
 
-dotenv.config();
+// Support the repository-root .env used by the current project as well as an
+// API-local override. Resolving from this file avoids npm workspace cwd rules.
+dotenv.config({ path: fileURLToPath(new URL("../../../../.env", import.meta.url)) });
+dotenv.config({ path: fileURLToPath(new URL("../../.env", import.meta.url)), override: true });
 
 export const env = {
   nodeEnv: process.env.NODE_ENV || "development",

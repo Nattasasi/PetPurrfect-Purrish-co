@@ -3,8 +3,8 @@ import { listProducts } from "../services/productService.js";
 
 const router = Router();
 
-router.get("/", (_, res) => {
-  res.json({ products: listProducts() });
+router.get("/", (req, res) => {
+  res.json(listProducts({ context: typeof req.query.context === "string" ? req.query.context : "home" }));
 });
 
 export default router;

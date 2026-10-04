@@ -58,6 +58,27 @@ export async function getPublicQuizResult(id) {
   }
 }
 
+export async function getBreedInfo(id) {
+  if (!id) return null;
+  try {
+    const params = new URLSearchParams();
+    if (import.meta.env.VITE_CURRENCY) params.set("currency", import.meta.env.VITE_CURRENCY);
+    if (import.meta.env.VITE_ADOPTION_LOCATION) params.set("location", import.meta.env.VITE_ADOPTION_LOCATION);
+    if (typeof navigator !== "undefined" && navigator.language) params.set("locale", navigator.language);
+    try {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (timeZone) params.set("timeZone", timeZone);
+    } catch {
+      // Location context is optional; configured values still take precedence.
+    }
+    const query = params.toString();
+    const body = await getJson(`/api/quiz/breed-info/${encodeURIComponent(id)}${query ? `?${query}` : ""}`);
+    return body?.info ? body : null;
+  } catch {
+    return null;
+  }
+}
+
 // Records that the current user shared their result on a platform. Never
 // throws — analytics must not block the share action itself.
 export async function trackShareEvent(resultId, platform) {
@@ -90,6 +111,19 @@ export async function trackLandingEvent(payload) {
 
 export async function getShareAnalytics() {
   return getJson("/api/quiz/share/analytics");
+}
+
+export async function getProducts(context = "home") {
+  try {
+    const params = new URLSearchParams({ context });
+    const body = await getJson(`/api/products?${params.toString()}`);
+    return {
+      products: Array.isArray(body?.products) ? body.products : [],
+      meta: body?.meta || null
+    };
+  } catch {
+    return { products: [], meta: null };
+  }
 }
 
 export async function generateStickerCaptions(breed, attributes) {

@@ -1,9 +1,12 @@
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { exportQuizResultImage } from "../lib/shareImage";
 import { resolvePetImageUrl } from "../lib/petImages";
 import { buildPersonalitySummary, matchStrengthLabel } from "../lib/personalityInsights";
 import { getPublicQuizResult } from "../lib/apiClient";
+import BreedInfoCard from "../components/BreedInfoCard";
+import ProductRecommendations from "../components/products/ProductRecommendations";
+import { trackViewResult } from "../lib/analytics";
 
 const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const QUIZ_STORAGE_VERSION_KEY = "purrishco.quiz.storage.version";
@@ -47,6 +50,7 @@ export default function QuizResultPage() {
   const { id } = useParams();
   const [sharedResult, setSharedResult] = useState(null);
   const [sharedResultError, setSharedResultError] = useState(false);
+  const trackedResultRef = useRef("");
 
   const storedResult = useMemo(() => readStoredResult(), []);
 
@@ -72,19 +76,20 @@ export default function QuizResultPage() {
   // Set Open Graph meta tags for shared results
   useEffect(() => {
     const result = sharedResult || storedResult;
-    if (!result || !result.match) {
+    if (!result || (!result.match && !result.matchName)) {
       return;
     }
 
     const imageUrl = resolvePetImageUrl(
-      result.imageUrl || result.match.imageUrl,
-      result.match.id,
-      result.match.name,
-      result.match.petType
+      result.imageUrl || result.match?.imageUrl,
+      result.match?.id || result.matchId,
+      result.match?.name || result.matchName,
+      result.match?.petType
     );
 
     // Update title and description
-    document.title = `${result.match.name} - Pet Quiz Result | Purrish&Co.`;
+    const resultName = result.match?.name || result.matchName || "Pet Match";
+    document.title = `${resultName} - Pet Quiz Result | Purrish&Co.`;
 
     // Remove existing OG meta tags
     document.querySelectorAll('meta[property^="og:"]').forEach((tag) => tag.remove());
@@ -97,7 +102,7 @@ export default function QuizResultPage() {
       document.head.appendChild(meta);
     };
 
-    createMetaTag("og:title", `I got ${result.match.name}!`);
+    createMetaTag("og:title", `I got ${resultName}!`);
     createMetaTag("og:description", result.personalitySummary || "Check out my pet personality quiz result!");
     createMetaTag("og:image", imageUrl);
     createMetaTag("og:type", "website");
@@ -108,6 +113,17 @@ export default function QuizResultPage() {
       document.querySelectorAll('meta[property^="og:"]').forEach((tag) => tag.remove());
     };
   }, [sharedResult, storedResult]);
+
+  useEffect(() => {
+    const current = sharedResult || storedResult;
+    const name = current?.match?.name || current?.matchName;
+    const resultId = current?.persistence?.id || current?.id || id || "local-result";
+    const trackingKey = `${resultId}:${name || ""}`;
+    if (current && name && trackedResultRef.current !== trackingKey) {
+      trackedResultRef.current = trackingKey;
+      trackViewResult(resultId, name);
+    }
+  }, [id, sharedResult, storedResult]);
 
   const result = sharedResult || storedResult;
 
@@ -126,12 +142,13 @@ export default function QuizResultPage() {
   }
 
   const personalitySummary = result.personalitySummary || buildPersonalitySummary(result.topTraits || []);
-  const matchStrength = matchStrengthLabel(result.match?.confidence || 0);
+  const matchStrength = matchStrengthLabel(result.match?.confidence || result.confidence || 0);
+  const resultName = result.match?.name || result.matchName || "Your Pet Match";
 
   const imageUrl = resolvePetImageUrl(
     result.imageUrl || result.match?.imageUrl,
-    result.match?.id,
-    result.match?.name,
+    result.match?.id || result.matchId,
+    result.match?.name || result.matchName,
     result.match?.petType
   );
 
@@ -150,10 +167,10 @@ export default function QuizResultPage() {
             className="quiz-result-image"
           />
           <i className="fas fa-paw fa-4x" />
-          <h3>{result.match?.name || "Your Pet Match"}</h3>
+          <h3>{resultName}</h3>
           <p>{personalitySummary}</p>
           <p className="quiz-hint">{result.summary}</p>
-          <p className="quiz-hint">A {result.match?.name || "pet"} looks like {matchStrength} for your personality!</p>
+          <p className="quiz-hint">A {resultName} looks like {matchStrength} for your personality!</p>
           {result.error && <p className="quiz-error">{result.error}</p>}
 
           <div className="quiz-buttons">
@@ -173,19 +190,22 @@ export default function QuizResultPage() {
 
       <section className="info-section">
         <div className="info-card">
-          <h2>Next Steps</h2>
+          <BreedInfoCard breedId={result.match?.id || result.matchId} breedName={resultName} />
+          <h2>Useful Next Steps</h2>
           <ul>
             <li>Share your result image with friends</li>
             <li>Try the sticker generator for your pet photo</li>
-            <li>
-              Explore products in the{" "}
-              <a href="https://shopee.co.th/purrishandco?entryPoint=ShopBySearch&searchKeyword=purrish" target="_blank" rel="noreferrer">
-                shop page
-              </a>
-            </li>
+            <li>Compare a home-size cleanup pack with a compact travel pack below</li>
           </ul>
         </div>
       </section>
+
+      <ProductRecommendations
+        context="quiz"
+        petType={result.match?.petType || result.petType || "pet"}
+        matchName={resultName}
+        heading={`Practical care picks for life with a ${resultName}`}
+      />
     </>
   );
 }

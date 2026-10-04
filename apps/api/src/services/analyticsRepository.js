@@ -103,6 +103,7 @@ export async function getFunnelMetrics(startDate = null, endDate = null) {
     const startQuiz = await getEventCount("start_quiz");
     const completeQuiz = await getEventCount("complete_quiz");
     const shareResult = await getEventCount("share_result");
+    const productClick = await getEventCount("product_click");
 
     return {
       enabled: true,
@@ -113,7 +114,9 @@ export async function getFunnelMetrics(startDate = null, endDate = null) {
         complete_quiz: completeQuiz,
         complete_to_start: startQuiz > 0 ? ((completeQuiz / startQuiz) * 100).toFixed(2) : 0,
         share_result: shareResult,
-        share_to_complete: completeQuiz > 0 ? ((shareResult / completeQuiz) * 100).toFixed(2) : 0
+        share_to_complete: completeQuiz > 0 ? ((shareResult / completeQuiz) * 100).toFixed(2) : 0,
+        product_click: productClick,
+        product_click_to_complete: completeQuiz > 0 ? ((productClick / completeQuiz) * 100).toFixed(2) : 0
       }
     };
   } catch (error) {

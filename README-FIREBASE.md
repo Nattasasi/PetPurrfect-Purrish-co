@@ -25,6 +25,22 @@ Open `http://localhost:3001/` and `http://localhost:3001/admin/login.html`. This
 
 For React hot reload, run `npm run dev:api` and `npm run dev:web` in separate terminals; open `http://localhost:5173/`. Vite proxies `/api` to port 3001. Use the full-site mode when testing transitions between the static site and React. A plain Python static server cannot serve the API or the React route fallbacks. Ports 5500/8000 on localhost retain an API fallback to `http://localhost:3001` for the static contact page.
 
+## Shopee product catalog
+
+The customer homepage, quiz result, and generated-sticker result use the managed
+catalog in `apps/api/src/data/productCatalog.js`. It contains the Purrish&amp;Co.
+wipe pack sizes and Shopee destinations shown by the website. Edit that one file
+when products, merchandising copy, or listing URLs change; the API filters the
+same catalog for each page context.
+
+Prices are deliberately not copied into the repository. The UI identifies THB
+as the store currency and asks customers to confirm the current price,
+ingredients, stock, shipping, and checkout details on Shopee. This
+prevents an old website price or inferred visitor location from contradicting
+the live marketplace listing. Product clicks are recorded as `product_click`
+events with product and placement identifiers; no purchase or voucher-code
+claim is made.
+
 ## Customer authentication foundation
 
 The React customer app now includes a headless `AuthProvider` and `useAuth()` in
@@ -196,7 +212,7 @@ Optional settings:
 - `ALLOWED_ORIGINS`: comma-separated exact origins for your custom domain. Defaults include the existing Firebase hosting domains and, outside production, localhost development origins. CORS is not authentication.
 - `PORT`: defaults to 3001 locally; the Docker image uses 8080.
 - `SERVE_WEB=true`: used by `npm run dev:site` for local full-site serving. Production Hosting serves the prepared web files; Cloud Run serves the API.
-- Existing AI integrations still use `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, and optional `NINJA_API_BASE_URL`, `NINJA_API_PATH`, `NINJA_API_KEY`, and `CAT_API_KEY`. Keep API keys in backend environment variables or Secret Manager. Real adaptive quizzes require a reachable Ollama service with the selected model installed. Cloud Run's `localhost:11434` is not your laptop; configure a reachable protected model service before testing production quizzes. Firebase Hosting has a 60-second request timeout, so the model must answer within that limit.
+- Existing AI integrations still use `OLLAMA_BASE_URL` and `OLLAMA_MODEL`. Breed results can optionally use `NINJA_API_BASE_URL`, `NINJA_API_PATH`, `NINJA_API_KEY`, `BRAVE_SEARCH_API_KEY`, `RESCUEGROUPS_API_KEY`, and `CAT_API_KEY`. Brave and RescueGroups keys must remain in backend environment variables or Secret Manager. Without those optional keys, the result page falls back to free location-aware Brave search links. Currency conversion uses the keyless Frankfurter API. Real adaptive quizzes require a reachable Ollama service with the selected model installed. Cloud Run's `localhost:11434` is not your laptop; configure a reachable protected model service before testing production quizzes. Firebase Hosting has a 60-second request timeout, so the model must answer within that limit.
 - Leave `VITE_API_BASE_URL` unset for the supplied same-origin deployment. The ingestion client uses the Hosting `/api` rewrite; Vite uses its local proxy.
 
 ## Deployment commands (not executed)

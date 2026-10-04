@@ -6,6 +6,7 @@ import { useInMemoryPageState } from "../lib/inMemoryPageState";
 import { generateStickerCaptions } from "../lib/apiClient";
 import { trackStickerGeneration } from "../lib/analytics";
 import ShareResultCard from "../components/share/ShareResultCard";
+import ProductRecommendations from "../components/products/ProductRecommendations";
 
 function capitalize(value) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
@@ -206,7 +207,7 @@ export default function StickerPage() {
     : "Upload a cat or dog photo to begin analysis";
 
   const stickerShareCaption = analysisResult?.validPet
-    ? `My pet just got turned into a ${analysisResult.breed} sticker by Purrish&Co! ${capitalize(matchedPreset?.name || "playful")} coloring, ${detectedAttributes.faceShape || "round"} face, 100% adorable. Get yours free with every order!`
+    ? `My pet just got turned into a ${analysisResult.breed} sticker by Purrish&Co! ${capitalize(matchedPreset?.name || "playful")} coloring, ${detectedAttributes.faceShape || "round"} face, 100% adorable.`
     : "";
 
   // Set Open Graph meta tags for sticker results so link previews show the sticker image
@@ -353,7 +354,7 @@ export default function StickerPage() {
           <div className="card">
             <i className="fa-solid fa-wand-magic-sparkles" />
             <h3>Create Sticker</h3>
-            <p>A cute personalized sticker will be generated for your order.</p>
+            <p>A cute personalized digital sticker will be generated to download and share.</p>
           </div>
         </div>
       </section>
@@ -399,6 +400,15 @@ export default function StickerPage() {
           )}
         </div>
       </section>
+
+      {isGenerated && analysisResult?.validPet && (
+        <ProductRecommendations
+          context="sticker"
+          petType={analysisResult.attributes?.petType || detectedAttributes.petType || "pet"}
+          matchName={analysisResult.breed}
+          heading="From a fun sticker to practical pet care"
+        />
+      )}
 
       {debugMode && imageUrl && analysisResult?.validPet && debugImageUrl && (
         <section className="debug-section">

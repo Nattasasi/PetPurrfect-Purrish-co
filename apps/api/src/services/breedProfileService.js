@@ -25,6 +25,12 @@ function numberInRange(value, minimum = 0, maximum = 1) {
   return Math.min(maximum, Math.max(minimum, parsed));
 }
 
+function numericOrNull(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function slugify(value) {
   return String(value)
     .toLowerCase()
@@ -160,6 +166,25 @@ function parseWorkbookBreeds() {
         petType: String(row.species).toLowerCase(),
         summary: row.description || `${row.breed_name}: ${row.personality_traits || 'breed profile'}.`,
         personalityTraits: row.personality_traits || '',
+        breedInfo: {
+          lifeSpan: row.life_span || null,
+          origin: row.origin_country || null,
+          height: row.height || null,
+          weight: row.weight || null,
+          temperament: row.personality_traits || null,
+          healthNote: row.guardian_note ? String(row.guardian_note).slice(0, 500) : null,
+          exerciseMinutesDaily: numericOrNull(row['Avg exercise_minutes_daily']),
+          groomingHoursMonthly: numericOrNull(row['Avg grooming_hours_monthly']),
+          // The workbook's cost estimate is INR-only and is not shown as a
+          // local price. A provider must supply a location and currency.
+          estimatedMonthlyCareCost: null,
+          purchasePrice: null,
+          adoption: {
+            available: null,
+            message: 'Live adoption listings are not connected yet.'
+          },
+          source: 'local-breed-workbook'
+        },
         source: 'excel-workbook',
         traits: {
           energy: energy ?? 0.5,

@@ -12,6 +12,12 @@ import {
 } from "../services/shareAnalyticsRepository.js";
 import { generateAdaptiveQuestions, getStaticQuestions } from "../services/quizQuestionService.js";
 import { fetchBreedImageUrl } from "../adapters/petImageApi.js";
+import { fetchPetKnowledge } from "../adapters/externalPetApi.js";
+import {
+  convertPriceRange,
+  fetchFreeBreedData,
+  resolveRegionalContext
+} from "../adapters/freeBreedData.js";
 import { saveQuizResult } from "../services/quizResultRepository.js";
 import {
   getQuizProfiles,
@@ -38,6 +44,142 @@ router.get("/profiles", async (req, res) => {
     });
   }
 });
+
+// Returns a public breed-information view enriched by location-aware providers.
+// Local workbook data remains the fallback when either provider is unavailable.
+router.get("/breed-info/:id", async (req, res) => {
+  try {
+    const profiles = await getQuizProfiles();
+    const breed = profiles.breeds.find((item) => item.id === req.params.id);
+    if (!breed) {
+      res.status(404).json({ error: "breed_not_found" });
+      return;
+    }
+
+    const context = {
+      location: queryString(req.query.location),
+      currency: queryString(req.query.currency),
+      locale: queryString(req.query.locale),
+      timeZone: queryString(req.query.timeZone)
+    };
+    const region = resolveRegionalContext(context);
+    const [external, freeData] = await Promise.all([
+      fetchPetKnowledge(breed.name, context),
+      fetchFreeBreedData(breed.name, context)
+    ]);
+    const externalRecord = external.records.find((record) => (
+      record.name.toLowerCase() === breed.name.toLowerCase()
+    ))?.raw || external.records[0]?.raw || null;
+    const externalInfo = mergeExternalBreedInfo(
+      breed.breedInfo,
+      externalRecord,
+      external.source,
+      region.currency
+    );
+    const localizedPrice = await convertPriceRange(
+      extractExternalPrice(externalRecord),
+      region.currency
+    );
+    const info = mergeFreeBreedInfo(
+      localizedPrice ? { ...externalInfo, purchasePrice: localizedPrice } : externalInfo,
+      freeData
+    );
+
+    res.json({
+      id: breed.id,
+      name: breed.name,
+      petType: breed.petType,
+      summary: breed.summary,
+      personalityTraits: breed.personalityTraits,
+      info
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "breed_info_failed",
+      message: error?.message || "Failed to load breed information"
+    });
+  }
+});
+
+function queryString(value, maxLength = 80) {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function firstValue(source, keys) {
+  return keys.map((key) => source?.[key]).find((value) => value !== null && value !== undefined && value !== "");
+}
+
+function numberOrNull(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function extractExternalPrice(external) {
+  if (!external) return null;
+  const min = numberOrNull(firstValue(external, ["min_price", "price_min", "minPrice"]));
+  const max = numberOrNull(firstValue(external, ["max_price", "price_max", "maxPrice"]));
+  const currency = firstValue(external, ["currency", "price_currency"]);
+  return (min !== null || max !== null) && currency
+    ? { min, max, currency: String(currency).toUpperCase(), source: "external-provider" }
+    : null;
+}
+
+function mergeExternalBreedInfo(localInfo, external, source, requestedCurrency = "") {
+  if (!external) return localInfo;
+
+  const characteristics = external.characteristics || {};
+  const minPrice = numberOrNull(firstValue(external, ["min_price", "price_min", "minPrice"]));
+  const maxPrice = numberOrNull(firstValue(external, ["max_price", "price_max", "maxPrice"]));
+  const currency = firstValue(external, ["currency", "price_currency"]);
+  const externalHealthNote = firstValue(external, ["health_issues", "healthIssues", "health_conditions", "healthConditions"]);
+  const adoptionUrl = firstValue(external, ["adoption_url", "adoptionUrl", "shelter_url", "shelterUrl"]);
+  const adoptionAvailable = firstValue(external, ["adoption_available", "available_for_adoption", "available"]);
+  const temperament = firstValue(characteristics, ["temperament"]);
+  const diet = firstValue(characteristics, ["diet"]);
+  const externalLifeSpan = firstValue(characteristics, ["lifespan", "life_span"]);
+  const careParts = [
+    temperament ? `Temperament: ${temperament}.` : "",
+    localInfo.exerciseMinutesDaily ? `Plan for about ${localInfo.exerciseMinutesDaily} minutes of daily exercise.` : "",
+    localInfo.groomingHoursMonthly ? `Grooming may take about ${localInfo.groomingHoursMonthly} hours per month.` : "",
+    diet ? `General diet classification: ${diet}.` : ""
+  ].filter(Boolean);
+
+  return {
+    ...localInfo,
+    lifeSpan: externalLifeSpan || firstValue(external, ["life_span", "lifespan", "lifeSpan"]) || localInfo.lifeSpan,
+    origin: firstValue(external, ["origin", "origin_country", "originCountry"]) || localInfo.origin,
+    healthNote: typeof externalHealthNote === "string"
+      ? externalHealthNote
+      : (careParts.length > 0 ? careParts.join(" ") : localInfo.healthNote),
+    temperament: temperament || localInfo.temperament || null,
+    purchasePrice: (minPrice !== null || maxPrice !== null)
+      && currency
+      && requestedCurrency
+      && currency.toUpperCase() === requestedCurrency.toUpperCase()
+      ? { min: minPrice, max: maxPrice, currency: currency || null, source: "external-provider" }
+      : localInfo.purchasePrice,
+    adoption: adoptionUrl || adoptionAvailable !== undefined
+      ? {
+        available: adoptionAvailable ?? null,
+        url: adoptionUrl || null,
+        message: adoptionUrl ? "Check current listings" : "Availability depends on local shelters."
+      }
+      : localInfo.adoption,
+    source: source && source !== "disabled" ? `${localInfo.source};external-provider` : localInfo.source
+  };
+}
+
+function mergeFreeBreedInfo(baseInfo, freeData) {
+  return {
+    ...baseInfo,
+    adoption: freeData.adoption,
+    priceResearchUrl: freeData.priceResearchUrl,
+    region: freeData.region,
+    sources: freeData.sources,
+    source: `${baseInfo.source};${freeData.source}`
+  };
+}
 
 router.post("/discriminator-question", async (req, res) => {
   try {

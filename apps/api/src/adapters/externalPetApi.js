@@ -90,7 +90,7 @@ export function isNinjaApiConfigured() {
   return Boolean(process.env.NINJA_API_BASE_URL);
 }
 
-export async function fetchPetKnowledge(name) {
+export async function fetchPetKnowledge(name, options = {}) {
   const baseUrl = process.env.NINJA_API_BASE_URL;
   const apiPath = process.env.NINJA_API_PATH || "/pets";
   const apiKey = process.env.NINJA_API_KEY;
@@ -103,7 +103,10 @@ export async function fetchPetKnowledge(name) {
     return { enabled: true, source: "no-query", records: [] };
   }
 
-  const query = new URLSearchParams({ name }).toString();
+  const params = new URLSearchParams({ name });
+  if (options.location) params.set("location", options.location);
+  if (options.currency) params.set("currency", options.currency);
+  const query = params.toString();
   const requestUrl = `${baseUrl.replace(/\/$/, "")}/${apiPath.replace(/^\//, "")}?${query}`;
   const headers = {};
 

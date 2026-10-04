@@ -175,6 +175,14 @@ export function trackStickerGeneration(breed, imageUrl = null) {
   });
 }
 
+export function trackProductClick(productId, placement, recommendationContext = null) {
+  return trackEvent("product_click", {
+    productId: productId || "storefront",
+    placement,
+    recommendationContext
+  });
+}
+
 /**
  * Funnel event: User viewed shared link (landing)
  */

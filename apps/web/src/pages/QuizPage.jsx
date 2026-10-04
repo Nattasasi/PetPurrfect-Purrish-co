@@ -9,6 +9,7 @@ import { useInMemoryPageState } from "../lib/inMemoryPageState";
 import { buildPersonalitySummary, matchStrengthLabel } from "../lib/personalityInsights";
 import { trackViewQuiz, trackStartQuiz, trackCompleteQuiz } from "../lib/analytics";
 import ShareResultCard from "../components/share/ShareResultCard";
+import BreedInfoCard from "../components/BreedInfoCard";
 
 const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const STATIC_QUESTION_COUNT = 5;
@@ -76,6 +77,16 @@ function formatOptionScore(option) {
     .filter(([trait]) => TRAIT_SHORT_LABELS[trait])
     .map(([trait, value]) => `${TRAIT_SHORT_LABELS[trait]} ${value >= 0 ? "+" : ""}${value}`)
     .join(" · ");
+}
+
+function formatTraitName(trait) {
+  return String(trait)
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatDebugValue(value) {
+  return Number.isInteger(value) ? String(value) : Number(value).toFixed(3);
 }
 
 const STATIC_QUESTIONS = staticQuizQuestions
@@ -547,35 +558,42 @@ export default function QuizPage() {
               {apiError && <p className="quiz-error">{apiError}</p>}
               {import.meta.env.DEV && debugScoreBreakdown && (
                 <section className="quiz-debug-breakdown" aria-label="Debug score breakdown">
-                  <h4>Score Breakdown</h4>
-                  <div className="quiz-debug-grid">
+                  <div className="quiz-debug-header">
                     <div>
+                      <span>Development only</span>
+                      <h4>Score breakdown</h4>
+                    </div>
+                    <i className="fas fa-chart-simple" aria-hidden="true" />
+                  </div>
+                  <div className="quiz-debug-grid">
+                    <div className="quiz-debug-panel">
                       <p className="quiz-debug-label">Raw Traits</p>
                       <ul className="quiz-debug-list">
                         {Object.entries(debugScoreBreakdown.raw).map(([trait, value]) => (
-                          <li key={trait}><strong>{trait}</strong>: {value}</li>
+                          <li key={trait}><span>{formatTraitName(trait)}</span><strong>{formatDebugValue(value)}</strong></li>
                         ))}
                       </ul>
                     </div>
-                    <div>
+                    <div className="quiz-debug-panel">
                       <p className="quiz-debug-label">Normalized Traits</p>
                       <ul className="quiz-debug-list">
                         {Object.entries(debugScoreBreakdown.normalized).map(([trait, value]) => (
-                          <li key={trait}><strong>{trait}</strong>: {value}</li>
+                          <li key={trait}><span>{formatTraitName(trait)}</span><strong>{formatDebugValue(value)}</strong></li>
                         ))}
                       </ul>
                     </div>
                   </div>
-                  <div>
+                  <div className="quiz-debug-top-traits">
                     <p className="quiz-debug-label">Top Traits</p>
                     <ul className="quiz-debug-list quiz-debug-list--compact">
                       {debugScoreBreakdown.topTraits.map((trait) => (
-                        <li key={trait.key}><strong>{trait.key}</strong>: {trait.value}</li>
+                        <li key={trait.key}><span>{formatTraitName(trait.key)}</span><strong>{formatDebugValue(trait.value)}</strong></li>
                       ))}
                     </ul>
                   </div>
                 </section>
               )}
+              <BreedInfoCard breedId={displayResult.id} breedName={displayResult.name} />
               <div className="quiz-buttons">
                 <button className="btn btn-outline" type="button" onClick={resetQuiz}>
                   <i className="fas fa-rotate-left" aria-hidden="true" /> Retake Quiz
