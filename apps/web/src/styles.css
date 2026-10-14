@@ -3243,3 +3243,25 @@ textarea:focus{
 .btn-danger:hover{ background:#fdecef; border-color:#f4c5ce; }
 .btn-icon{ padding:8px 11px; }
 .btn-icon i{ margin:0; }
+
+.debug-tools{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    max-width:520px;
+    margin:14px auto 0;
+    padding:8px 14px;
+    border:1px dashed #e3d8da;
+    border-radius:14px;
+    background:#fffafb;
+}
+
+.debug-tools span{
+    color:#8c8083;
+    font-size:.8rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+}

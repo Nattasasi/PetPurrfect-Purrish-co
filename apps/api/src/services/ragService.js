@@ -283,7 +283,7 @@ export async function evaluateQuiz(payload = {}) {
       matchName: response.match.name,
       confidence: response.match.confidence,
       imageUrl: response.match.imageUrl || null,
-      source: "api",
+      source: payload.source === "debug" ? "debug" : "api",
       traits,
       topTraits: payload.topTraits || [],
       answers,

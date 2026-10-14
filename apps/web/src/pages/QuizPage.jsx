@@ -147,6 +147,9 @@ export default function QuizPage() {
     }
   }, [location.pathname]);
 
+  // Test tools: always in dev builds, and on the live site only with ?debug=1 in the URL.
+  const debugTools = import.meta.env.DEV || new URLSearchParams(location.search).get("debug") === "1";
+
   const currentQuestion = questions[currentIndex] || null;
   const selectedValue = currentQuestion ? answersById[currentQuestion.id] ?? "" : "";
   const progress = ((currentIndex + 1) / TOTAL_QUESTION_COUNT) * 100;
@@ -288,7 +291,8 @@ export default function QuizPage() {
     if (generated) setCurrentIndex((prev) => prev + 1);
   };
 
-  const submitAnswers = async (answersMap, questionsForScoring = questions) => {
+  // silent: test runs skip funnel tracking and are tagged "debug" in saved results.
+  const submitAnswers = async (answersMap, questionsForScoring = questions, { silent = false } = {}) => {
     const computedScoring = scoreQuiz(questionsForScoring, answersMap, profileData);
     const answers = questionsForScoring.map((question) => ({
       questionId: question.id,
@@ -321,7 +325,8 @@ export default function QuizPage() {
         questionCount: questionsForScoring.length,
         traits: computedScoring.normalized,
         topTraits: computedScoring.topTraits,
-        discriminatorQuestion: questionsForScoring.find((question) => question.id === "adaptive-q10") || null
+        discriminatorQuestion: questionsForScoring.find((question) => question.id === "adaptive-q10") || null,
+        ...(silent ? { source: "debug" } : {})
       });
 
 
@@ -367,7 +372,7 @@ export default function QuizPage() {
       setIsSubmitting(false);
       setSubmitted(true);
       localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(resultPayload));
-      trackCompleteQuiz(resultPayload.persistence?.id, resultPayload.match?.name, resultPayload.match?.confidence);
+      if (!silent) trackCompleteQuiz(resultPayload.persistence?.id, resultPayload.match?.name, resultPayload.match?.confidence);
     }
   };
 
@@ -413,6 +418,25 @@ export default function QuizPage() {
       trackStartQuiz();
     }
     await goNext(value);
+  };
+
+  const randomValue = (question) => question.options[Math.floor(Math.random() * question.options.length)].value;
+
+  const answerRandomly = () => {
+    if (currentQuestion) selectOption(randomValue(currentQuestion));
+  };
+
+  // Random answers for every question loaded so far, then straight to the real submit path.
+  const fastForward = async () => {
+    const resolved = questions.filter(Boolean);
+    const answersMap = { ...answersById };
+    resolved.forEach((question) => {
+      if (!answersMap[question.id]) answersMap[question.id] = randomValue(question);
+    });
+    setAnswersById(answersMap);
+    setApiError("");
+    setIsSubmitting(true);
+    await submitAnswers(answersMap, resolved, { silent: true });
   };
 
   const resetQuiz = () => {
@@ -493,6 +517,17 @@ export default function QuizPage() {
           <div className="progress-fill" style={{ width: `${progress}%` }} />
         </div>
         <p>Question {currentIndex + 1} of {TOTAL_QUESTION_COUNT}</p>
+        {debugTools && !submitted && !isSubmitting && (
+          <div className="debug-tools" role="group" aria-label="Quiz test tools">
+            <span>Test tools</span>
+            <button className="btn btn-sm btn-ghost" type="button" onClick={answerRandomly} disabled={adaptiveLoading || !currentQuestion}>
+              <i className="fa-solid fa-dice" aria-hidden="true" /> Answer this one
+            </button>
+            <button className="btn btn-sm btn-remind" type="button" onClick={fastForward} disabled={adaptiveLoading}>
+              <i className="fa-solid fa-forward" aria-hidden="true" /> Skip to result
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="quiz-container">
