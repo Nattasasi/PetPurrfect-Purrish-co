@@ -13,7 +13,7 @@ const TRAIT_KEYS = ["energy", "sociability", "stranger_friendly", "routine", "tr
 const OLLAMA_TIMEOUT_MS = 300000;
 const GROUNDING_CANDIDATE_COUNT = 3;
 const MAX_SHARE_CAPTIONS = 3;
-const MAX_SHARE_CAPTION_LENGTH = 180;
+const MAX_SHARE_CAPTION_LENGTH = 280;
 
 function scoreCandidate(traits, candidate) {
   const distance = TRAIT_KEYS.reduce((sum, key) => {
@@ -153,28 +153,46 @@ Rules:
 - Emojis are optional.`;
 }
 
+// Models vary the JSON shape ({captions:[...]}, [...], {caption1:"..."}, items as {text}), so collect strings from any of them.
+function extractCaptionStrings(parsed) {
+  const collect = (value) => {
+    if (typeof value === "string") return [value];
+    if (Array.isArray(value)) return value.flatMap(collect);
+    if (value && typeof value === "object") return Object.values(value).flatMap(collect);
+    return [];
+  };
+  return collect(parsed?.captions ?? parsed);
+}
+
 function parseShareCaptions(raw) {
-  const jsonText = raw.match(/\{[\s\S]*\}/)?.[0];
+  const jsonText = raw.match(/[{\[][\s\S]*[}\]]/)?.[0];
   const parsed = JSON.parse(jsonText || "{}");
-  const captions = Array.isArray(parsed.captions)
-    ? parsed.captions
-      .filter((caption) => typeof caption === "string")
-      .map((caption) => caption.trim())
-      .filter((caption) => caption.length > 0 && caption.length <= MAX_SHARE_CAPTION_LENGTH)
-      .slice(0, MAX_SHARE_CAPTIONS)
-    : [];
-  if (captions.length !== MAX_SHARE_CAPTIONS) throw new Error(`expected_${MAX_SHARE_CAPTIONS}_valid_captions_got_${captions.length}`);
+  const captions = extractCaptionStrings(parsed)
+    .map((caption) => caption.trim())
+    .filter((caption) => caption.length > 0 && caption.length <= MAX_SHARE_CAPTION_LENGTH)
+    .slice(0, MAX_SHARE_CAPTIONS);
+  if (captions.length === 0) {
+    const shape = Array.isArray(parsed) ? "array" : `keys:${Object.keys(parsed || {}).slice(0, 5).join(",")}`;
+    throw new Error(`no_usable_captions(${shape};len:${extractCaptionStrings(parsed).map((text) => text.length).join("/")})`);
+  }
   return captions;
 }
 
-// source is "ollama" or "fallback"; reason says why the static captions were used.
+// source is "ollama", "ollama+fallback" (some captions padded) or "fallback"; reason says why static captions were used.
 export async function generateShareCaptionsWithSource(selected, traits, context = "pet personality quiz result") {
+  const fallback = buildShareCaptionFallback(selected, context);
   try {
     const raw = await callOllama(buildShareCaptionPrompt(selected, traits, context), { json: true, maxTokens: 500 });
-    return { captions: parseShareCaptions(raw), source: "ollama", reason: null };
+    const captions = parseShareCaptions(raw);
+    if (captions.length === MAX_SHARE_CAPTIONS) return { captions, source: "ollama", reason: null };
+    return {
+      captions: [...captions, ...fallback].slice(0, MAX_SHARE_CAPTIONS),
+      source: "ollama+fallback",
+      reason: `only_${captions.length}_usable_captions`
+    };
   } catch (error) {
     console.warn(`[share-captions] using fallback captions: ${error?.message || error}`);
-    return { captions: buildShareCaptionFallback(selected, context), source: "fallback", reason: error?.message || "unknown" };
+    return { captions: fallback, source: "fallback", reason: error?.message || "unknown" };
   }
 }
 
