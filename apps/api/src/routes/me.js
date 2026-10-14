@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireCustomer } from "../middleware/requireCustomer.js";
 import { getEmailReminders, setEmailReminders } from "../services/reminderEmailService.js";
+import { picksForPet } from "../services/petPicksService.js";
 import { claimQuizResult, listOwnedQuizResults } from "../services/quizResultRepository.js";
 import {
   completeReminder,
@@ -65,6 +66,11 @@ router.get("/pets/:id/suggestions", handle(async (req, res) => {
   const pet = await findPet(req);
   return pet ? res.json({ suggestions: await suggestionsForPet(pet) }) : notFound(res);
 }, "suggestions_failed"));
+
+router.get("/pets/:id/picks", handle(async (req, res) => {
+  const pet = await findPet(req);
+  return pet ? res.json(await picksForPet(pet)) : notFound(res);
+}, "picks_failed"));
 
 router.get("/reminders", handle(async (req, res) => res.json({ reminders: await listReminders(req.uid) }), "reminders_fetch_failed"));
 router.post("/reminders", handle(async (req, res) => res.status(201).json({ reminder: await createReminder(req.uid, req.body) }), "reminder_save_failed"));

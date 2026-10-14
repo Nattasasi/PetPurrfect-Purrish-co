@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider.js";
 
 // Only same-site paths are allowed as redirect targets.
@@ -16,13 +16,9 @@ export default function LoginPage() {
     signIn,
     signUp,
     signInWithGoogle,
-    signOut,
     sendPasswordReset,
-    sendVerificationEmail,
-    refreshUser,
     clearError
   } = useAuth();
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = safeNext(params.get("next"));
   const [email, setEmail] = useState("");
@@ -31,9 +27,8 @@ export default function LoginPage() {
   const resetMode = mode === "reset";
   const [notice, setNotice] = useState("");
 
-  useEffect(() => {
-    if (user && next) navigate(next, { replace: true });
-  }, [user, next, navigate]);
+  // Signed-in users never see this page; they go to their profile (or the page they came from).
+  if (user) return <Navigate to={next || "/profile"} replace />;
 
   const updateField = (setter) => (event) => {
     setter(event.target.value);
@@ -74,71 +69,17 @@ export default function LoginPage() {
     }
   };
 
-  const handleVerification = async () => {
-    setNotice("");
-    try {
-      await sendVerificationEmail();
-      setNotice("Verification email sent. Open the link, then refresh your account status.");
-    } catch {
-      // AuthProvider exposes the sanitized error below the action.
-    }
-  };
-
-  const handleRefresh = async () => {
-    setNotice("");
-    try {
-      const refreshed = await refreshUser();
-      setNotice(refreshed?.emailVerified ? "Your email is verified." : "Verification is still pending.");
-    } catch {
-      // AuthProvider exposes the sanitized error below the action.
-    }
-  };
-
-  const handleSignOut = async () => {
-    setNotice("");
-    try {
-      await signOut();
-    } catch {
-      // AuthProvider exposes the sanitized error below the action.
-    }
-  };
-
   return (
     <>
       <section className="page-header auth-page-header">
-        <h1>{user ? "Your Account" : mode === "signup" ? "Create Your Account" : "Welcome Back"}</h1>
-        <p>{user ? "Manage your Purrish&Co. customer session." : mode === "signup" ? "Save your quiz results and manage your pets." : "Sign in securely with your Purrish&Co. account."}</p>
+        <h1>{mode === "signup" ? "Create Your Account" : "Welcome Back"}</h1>
+        <p>{mode === "signup" ? "Save your quiz results and manage your pets." : "Sign in securely with your Purrish&Co. account."}</p>
       </section>
 
       <section className="auth-section" aria-busy={loading || pending}>
         <div className="auth-card">
           {loading ? (
             <p className="auth-status" role="status">Restoring your session...</p>
-          ) : user ? (
-            <div className="account-panel">
-              <span className="auth-kicker">Signed in as</span>
-              <h2>{user.displayName || user.email}</h2>
-              {user.displayName && <p className="account-email">{user.email}</p>}
-              <Link className="btn btn-outline" to="/profile">Go to my profile</Link>
-              <span className={`account-verification ${user.emailVerified ? "is-verified" : ""}`}>
-                {user.emailVerified ? "Email verified" : "Email not verified"}
-              </span>
-
-              {!user.emailVerified && (
-                <div className="auth-actions">
-                  <button className="btn btn-outline" type="button" disabled={pending} onClick={handleVerification}>
-                    Send Verification Email
-                  </button>
-                  <button className="auth-text-button" type="button" disabled={pending} onClick={handleRefresh}>
-                    Refresh status
-                  </button>
-                </div>
-              )}
-
-              <button className="btn btn-primary auth-submit" type="button" disabled={pending} onClick={handleSignOut}>
-                {pending ? "Please wait..." : "Sign Out"}
-              </button>
-            </div>
           ) : (
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
               <div className="auth-card-heading">
@@ -154,9 +95,18 @@ export default function LoginPage() {
               </div>
 
               {!resetMode && (
-                <button className="btn btn-outline auth-submit" type="button" disabled={pending} onClick={handleGoogle}>
-                  <i className="fa-brands fa-google" aria-hidden="true" /> Continue with Google
-                </button>
+                <>
+                  <button className="btn auth-google" type="button" disabled={pending} onClick={handleGoogle}>
+                    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                      <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z" />
+                      <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z" />
+                      <path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z" />
+                      <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z" />
+                    </svg>
+                    Continue with Google
+                  </button>
+                  <p className="auth-divider"><span>or</span></p>
+                </>
               )}
 
               <label htmlFor="customer-email">Email address</label>
@@ -212,8 +162,6 @@ export default function LoginPage() {
             </form>
           )}
 
-          {user && error && <p className="auth-message auth-error" role="alert">{error.message}</p>}
-          {user && notice && <p className="auth-message auth-success" role="status">{notice}</p>}
         </div>
       </section>
     </>

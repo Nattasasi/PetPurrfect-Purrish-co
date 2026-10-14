@@ -1,6 +1,7 @@
 import { getApps, initializeApp } from "firebase/app";
 import {
   browserLocalPersistence,
+  browserPopupRedirectResolver,
   browserSessionPersistence,
   connectAuthEmulator,
   indexedDBLocalPersistence,
@@ -47,6 +48,8 @@ export function getCustomerAuth() {
   const app = getApps().find((candidate) => candidate.name === appName) || initializeApp(config, appName);
   customerApp = app;
   const auth = initializeAuth(app, {
+    // initializeAuth omits the popup resolver by default, which breaks signInWithPopup.
+    popupRedirectResolver: browserPopupRedirectResolver,
     persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, inMemoryPersistence]
   });
   if (emulatorUrl && !auth.emulatorConfig) connectAuthEmulator(auth, emulatorUrl);

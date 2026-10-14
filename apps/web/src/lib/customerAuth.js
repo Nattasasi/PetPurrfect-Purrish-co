@@ -31,11 +31,14 @@ const errorMessages = {
   "auth/popup-closed-by-user": "Google sign-in was cancelled.",
   "auth/cancelled-popup-request": "Google sign-in was cancelled.",
   "auth/popup-blocked": "Your browser blocked the Google sign-in window. Allow pop-ups and try again.",
+  "auth/unauthorized-domain": "Google sign-in isn't enabled for this website address yet.",
+  "auth/operation-not-supported-in-this-environment": "Google sign-in isn't supported in this browser. Try email and password.",
   "auth/account-exists-with-different-credential": "An account already uses this email with a different sign-in method."
 };
 
 export function customerAuthError(error) {
   const code = error?.code || "auth/unavailable";
+  if (!errorMessages[code]) console.error("Unmapped auth error:", code, error?.message);
   return Object.assign(new Error(errorMessages[code] || "Account access is unavailable. Please try again."), { code });
 }
 

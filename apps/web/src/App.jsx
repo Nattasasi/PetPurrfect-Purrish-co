@@ -1,4 +1,4 @@
-import { NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import HomePage from "./pages/HomePage";
 import QuizPage from "./pages/QuizPage";
@@ -135,6 +135,7 @@ export default function App() {
 function ProfileMenu() {
   const { user, loading, pending, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -171,6 +172,7 @@ function ProfileMenu() {
     try {
       await signOut();
       setOpen(false);
+      navigate("/");
     } catch (error) {
       setMenuError(error.message);
     }
