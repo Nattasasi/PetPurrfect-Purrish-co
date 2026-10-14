@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { evaluateQuiz } from "../services/ragService.js";
+import { isUuid, recordEvent } from "../services/ingestionRepository.js";
 import {
   listRecentQuizResults,
   getLatestQuizResultForSession,
@@ -26,6 +27,24 @@ import {
 } from "../services/breedProfileService.js";
 
 const router = Router();
+
+// Records a completion only after evaluation succeeds; retries with the same completionId count once.
+export function createQuizEvaluationHandler({ evaluate = evaluateQuiz, record = recordEvent } = {}) {
+  return async (req, res) => {
+    try {
+      const result = await evaluate(req.body);
+      if (isUuid(req.body?.completionId)) {
+        await record("quiz_completion", req.body.completionId).catch(() => {});
+      }
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({
+        error: "quiz_evaluation_failed",
+        message: error?.message || "Unexpected server error"
+      });
+    }
+  };
+}
 
 router.get("/questions/static", (_req, res) => {
   res.json({ questions: getStaticQuestions() });
@@ -277,17 +296,7 @@ router.post("/questions/adaptive", async (req, res) => {
   }
 });
 
-router.post("/evaluate", async (req, res) => {
-  try {
-    const result = await evaluateQuiz(req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({
-      error: "quiz_evaluation_failed",
-      message: error?.message || "Unexpected server error"
-    });
-  }
-});
+router.post("/evaluate", createQuizEvaluationHandler());
 
 router.get("/results/recent", async (req, res) => {
   try {

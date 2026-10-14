@@ -2780,3 +2780,20 @@ textarea:focus{
 .quiz-result-panel p{
     text-align:center;
 }
+
+.saved-result,
+.pet-card,
+.suggestion-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.pet-card,
+.suggestion-card { flex-direction: column; align-items: flex-start; }
+.saved-result img { border-radius: 8px; object-fit: cover; }
+.info-card .auth-form label { display: block; margin-top: 8px; }
+.info-card .auth-form input,
+.info-card .auth-form select { display: block; width: 100%; margin-top: 4px; }

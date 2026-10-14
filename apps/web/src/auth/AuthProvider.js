@@ -55,6 +55,7 @@ export function AuthProvider({ children, service }) {
   const actions = useMemo(() => ({
     signUp: (credentials) => run("signUp", credentials),
     signIn: (credentials) => run("signIn", credentials),
+    signInWithGoogle: () => run("signInWithGoogle"),
     signOut: () => run("signOut"),
     sendPasswordReset: (email) => run("sendPasswordReset", email),
     sendVerificationEmail: () => run("sendVerificationEmail"),

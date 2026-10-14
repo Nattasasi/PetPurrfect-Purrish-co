@@ -6,6 +6,7 @@ import { useInMemoryPageState } from "../lib/inMemoryPageState";
 import { generateStickerCaptions } from "../lib/apiClient";
 import { trackStickerGeneration } from "../lib/analytics";
 import ShareResultCard from "../components/share/ShareResultCard";
+import SaveStickerPrompt from "../components/SaveStickerPrompt";
 import ProductRecommendations from "../components/products/ProductRecommendations";
 
 function capitalize(value) {
@@ -374,6 +375,7 @@ export default function StickerPage() {
 
               <div className="sticker-result-meta">
                 <p className="sticker-detection">Detected: {petDescriptor}</p>
+                <SaveStickerPrompt key={composedStickerUrl} stickerUrl={composedStickerUrl} breed={analysisResult.breed} />
               </div>
 
               <ShareResultCard

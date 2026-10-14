@@ -6,6 +6,7 @@ import QuizResultPage from "./pages/QuizResultPage";
 import StickerPage from "./pages/StickerPage";
 import ContactPage from "./pages/ContactPage";
 import LoginPage from "./pages/LoginPage";
+import ProfilePage from "./pages/ProfilePage";
 import { useAuth } from "./auth/AuthProvider.js";
 import { startCustomerTracking } from "../../../js/ingestion-client.mjs";
 
@@ -117,6 +118,7 @@ export default function App() {
           <Route path="/quiz/result/:id" element={<QuizResultPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin/share" element={<a href="https://purperfect-admin.web.app/index.html">Open the admin dashboard</a>} />
         </Routes>
       </main>
@@ -205,9 +207,9 @@ function ProfileMenu() {
                 <span>Signed in as</span>
                 <strong>{user.email}</strong>
               </div>
-              <NavLink to="/login" role="menuitem">
+              <NavLink to="/profile" role="menuitem">
                 <i className="fa-regular fa-id-card" aria-hidden="true" />
-                Account
+                My Profile
               </NavLink>
               <button type="button" role="menuitem" disabled={pending} onClick={handleSignOut}>
                 <i className="fa-solid fa-arrow-right-from-bracket" aria-hidden="true" />

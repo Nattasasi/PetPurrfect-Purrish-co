@@ -24,6 +24,13 @@ service firebase.storage {
         );
     }
 
+    match /users/{uid}/stickers/{fileName} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType in ['image/png', 'image/webp', 'image/jpeg'];
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

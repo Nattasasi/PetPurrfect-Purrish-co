@@ -10,6 +10,8 @@ import ragRoute from "./routes/rag.js";
 import productsRoute from "./routes/products.js";
 import stickerRoute from "./routes/sticker.js";
 import analyticsRoute from "./routes/analytics.js";
+import meRoute from "./routes/me.js";
+import emailRoute from "./routes/email.js";
 
 const app = express();
 
@@ -39,11 +41,13 @@ app.use("/api/rag", ragRoute);
 app.use("/api/products", productsRoute);
 app.use("/api/sticker", stickerRoute);
 app.use("/api/analytics", analyticsRoute);
+app.use("/api/me", meRoute);
+app.use("/api/email", emailRoute);
 
 if (process.env.SERVE_WEB === "true") {
   const root = fileURLToPath(new URL("../../../apps/web/dist/", import.meta.url));
   app.use(express.static(root));
-  app.get(["/quiz", "/quiz/*", "/pet", "/about", "/contact"], (_req, res) => res.sendFile(path.join(root, "app.html")));
+  app.get(["/quiz", "/quiz/*", "/pet", "/about", "/contact", "/login", "/profile"], (_req, res) => res.sendFile(path.join(root, "app.html")));
   app.get("/admin/share", (_req, res) => res.redirect("/admin/index.html"));
 }
 

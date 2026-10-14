@@ -296,6 +296,7 @@ export default function QuizPage() {
     }));
 
     let resultPayload = {
+      sessionId,
       generatedAt: new Date().toISOString(),
       source: "local",
       match: {

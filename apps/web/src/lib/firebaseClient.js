@@ -9,6 +9,7 @@ import {
   useDeviceLanguage
 } from "firebase/auth";
 import { createCustomerAuth } from "./customerAuth.js";
+import { getStorage } from "firebase/storage";
 
 // Public web configuration for the existing project, also used by the admin
 // site. This is not a service-account credential or an authorization boundary.
@@ -22,6 +23,13 @@ const firebaseConfig = {
 };
 
 let customerAuth;
+let customerApp;
+
+// Shares the customer app's auth session, so Storage rules see the signed-in user.
+export function getCustomerStorage() {
+  getCustomerAuth();
+  return getStorage(customerApp);
+}
 
 export function getCustomerAuth() {
   if (customerAuth) return customerAuth;
@@ -37,6 +45,7 @@ export function getCustomerAuth() {
     authDomain: "demo-purrishco.firebaseapp.com"
   } : firebaseConfig;
   const app = getApps().find((candidate) => candidate.name === appName) || initializeApp(config, appName);
+  customerApp = app;
   const auth = initializeAuth(app, {
     persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, inMemoryPersistence]
   });

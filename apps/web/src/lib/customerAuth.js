@@ -1,11 +1,13 @@
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   getIdToken,
   onIdTokenChanged,
   reload,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut
 } from "firebase/auth";
 
@@ -25,7 +27,11 @@ const errorMessages = {
   "auth/requires-recent-login": "Please sign in again to continue.",
   "auth/user-token-expired": "Your session has expired. Please sign in again.",
   "auth/sign-in-required": "Please sign in to continue.",
-  "auth/operation-in-progress": "Please wait for the current account action to finish."
+  "auth/operation-in-progress": "Please wait for the current account action to finish.",
+  "auth/popup-closed-by-user": "Google sign-in was cancelled.",
+  "auth/cancelled-popup-request": "Google sign-in was cancelled.",
+  "auth/popup-blocked": "Your browser blocked the Google sign-in window. Allow pop-ups and try again.",
+  "auth/account-exists-with-different-credential": "An account already uses this email with a different sign-in method."
 };
 
 export function customerAuthError(error) {
@@ -81,6 +87,11 @@ export function createCustomerAuth(auth) {
 
     async signIn({ email, password }) {
       const credential = await signInWithEmailAndPassword(auth, normalizeEmail(email), requirePassword(password));
+      return userSnapshot(credential.user);
+    },
+
+    async signInWithGoogle() {
+      const credential = await signInWithPopup(auth, new GoogleAuthProvider());
       return userSnapshot(credential.user);
     },
 

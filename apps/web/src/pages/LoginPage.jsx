@@ -1,5 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider.js";
+
+// Only same-site paths are allowed as redirect targets.
+function safeNext(value) {
+  return typeof value === "string" && /^\/(?!\/)/.test(value) ? value : null;
+}
 
 export default function LoginPage() {
   const {
@@ -8,16 +14,26 @@ export default function LoginPage() {
     pending,
     error,
     signIn,
+    signUp,
+    signInWithGoogle,
     signOut,
     sendPasswordReset,
     sendVerificationEmail,
     refreshUser,
     clearError
   } = useAuth();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const next = safeNext(params.get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [resetMode, setResetMode] = useState(false);
+  const [mode, setMode] = useState(params.get("mode") === "signup" ? "signup" : "login");
+  const resetMode = mode === "reset";
   const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (user && next) navigate(next, { replace: true });
+  }, [user, next, navigate]);
 
   const updateField = (setter) => (event) => {
     setter(event.target.value);
@@ -25,11 +41,20 @@ export default function LoginPage() {
     if (error) clearError();
   };
 
-  const toggleResetMode = () => {
-    setResetMode((current) => !current);
+  const switchMode = (target) => {
+    setMode(target);
     setPassword("");
     setNotice("");
     clearError();
+  };
+
+  const handleGoogle = async () => {
+    setNotice("");
+    try {
+      await signInWithGoogle();
+    } catch {
+      // AuthProvider exposes the sanitized error below the form.
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -41,7 +66,8 @@ export default function LoginPage() {
         setNotice("If an account uses this email, a password-reset link has been sent.");
         return;
       }
-      await signIn({ email, password });
+      if (mode === "signup") await signUp({ email, password });
+      else await signIn({ email, password });
       setPassword("");
     } catch {
       // AuthProvider exposes the sanitized error below the form.
@@ -80,8 +106,8 @@ export default function LoginPage() {
   return (
     <>
       <section className="page-header auth-page-header">
-        <h1>{user ? "Your Account" : "Welcome Back"}</h1>
-        <p>{user ? "Manage your Purrish&Co. customer session." : "Sign in securely with your Purrish&Co. account."}</p>
+        <h1>{user ? "Your Account" : mode === "signup" ? "Create Your Account" : "Welcome Back"}</h1>
+        <p>{user ? "Manage your Purrish&Co. customer session." : mode === "signup" ? "Save your quiz results and manage your pets." : "Sign in securely with your Purrish&Co. account."}</p>
       </section>
 
       <section className="auth-section" aria-busy={loading || pending}>
@@ -93,6 +119,7 @@ export default function LoginPage() {
               <span className="auth-kicker">Signed in as</span>
               <h2>{user.displayName || user.email}</h2>
               {user.displayName && <p className="account-email">{user.email}</p>}
+              <Link className="btn btn-outline" to="/profile">Go to my profile</Link>
               <span className={`account-verification ${user.emailVerified ? "is-verified" : ""}`}>
                 {user.emailVerified ? "Email verified" : "Email not verified"}
               </span>
@@ -116,13 +143,21 @@ export default function LoginPage() {
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
               <div className="auth-card-heading">
                 <span className="auth-kicker">Customer account</span>
-                <h2>{resetMode ? "Reset Your Password" : "Log In"}</h2>
+                <h2>{resetMode ? "Reset Your Password" : mode === "signup" ? "Sign Up" : "Log In"}</h2>
                 <p>
                   {resetMode
                     ? "Enter your account email and we’ll send a secure reset link."
-                    : "Use the email and password connected to your account."}
+                    : mode === "signup"
+                      ? "Create an account with your email or Google."
+                      : "Use the email and password connected to your account."}
                 </p>
               </div>
+
+              {!resetMode && (
+                <button className="btn btn-outline auth-submit" type="button" disabled={pending} onClick={handleGoogle}>
+                  <i className="fa-brands fa-google" aria-hidden="true" /> Continue with Google
+                </button>
+              )}
 
               <label htmlFor="customer-email">Email address</label>
               <input
@@ -146,7 +181,7 @@ export default function LoginPage() {
                     type="password"
                     value={password}
                     onChange={updateField(setPassword)}
-                    autoComplete="current-password"
+                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
                     required
                   />
                 </>
@@ -156,11 +191,24 @@ export default function LoginPage() {
               {notice && <p className="auth-message auth-success" role="status">{notice}</p>}
 
               <button className="btn btn-primary auth-submit" type="submit" disabled={pending}>
-                {pending ? "Please wait..." : resetMode ? "Send Reset Link" : "Log In"}
+                {pending ? "Please wait..." : resetMode ? "Send Reset Link" : mode === "signup" ? "Create Account" : "Log In"}
               </button>
-              <button className="auth-text-button" type="button" disabled={pending} onClick={toggleResetMode}>
-                {resetMode ? "Back to login" : "Forgot your password?"}
-              </button>
+              {resetMode ? (
+                <button className="auth-text-button" type="button" disabled={pending} onClick={() => switchMode("login")}>
+                  Back to login
+                </button>
+              ) : (
+                <>
+                  <button className="auth-text-button" type="button" disabled={pending} onClick={() => switchMode(mode === "signup" ? "login" : "signup")}>
+                    {mode === "signup" ? "Already have an account? Log in" : "New here? Create an account"}
+                  </button>
+                  {mode === "login" && (
+                    <button className="auth-text-button" type="button" disabled={pending} onClick={() => switchMode("reset")}>
+                      Forgot your password?
+                    </button>
+                  )}
+                </>
+              )}
             </form>
           )}
 

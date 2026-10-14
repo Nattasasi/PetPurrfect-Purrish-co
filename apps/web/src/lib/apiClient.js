@@ -149,3 +149,33 @@ export async function getDebugBreedImage(breed, petType) {
 export async function saveDebugQuizResult(payload) {
   return postJson("/api/quiz/debug/save-result", payload);
 }
+
+async function authedJson(path, token, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.message || body.error || `Request failed: ${res.status}`);
+  return body;
+}
+
+// Signed-in calls to /api/me; token comes from useAuth().getIdToken().
+export function meRequest(token, path, method = "GET", payload) {
+  return authedJson(`/api/me${path}`, token, {
+    method,
+    ...(payload ? { body: JSON.stringify(payload) } : {})
+  });
+}
+
+export function claimQuizResult(token, resultId, sessionId) {
+  return authedJson(`/api/me/results/${encodeURIComponent(resultId)}/claim`, token, {
+    method: "POST",
+    body: JSON.stringify({ sessionId })
+  });
+}
+
+export async function getMyResults(token) {
+  const body = await authedJson("/api/me/results", token);
+  return Array.isArray(body.results) ? body.results : [];
+}

@@ -5,6 +5,7 @@ import { resolvePetImageUrl } from "../lib/petImages";
 import { buildPersonalitySummary, matchStrengthLabel } from "../lib/personalityInsights";
 import { getPublicQuizResult } from "../lib/apiClient";
 import BreedInfoCard from "../components/BreedInfoCard";
+import SaveResultPrompt from "../components/SaveResultPrompt";
 import ProductRecommendations from "../components/products/ProductRecommendations";
 import { trackViewResult } from "../lib/analytics";
 
@@ -189,6 +190,13 @@ export default function QuizResultPage() {
       </section>
 
       <section className="info-section">
+        {!sharedResult && (
+          <SaveResultPrompt
+            resultId={storedResult?.persistence?.id}
+            sessionId={storedResult?.sessionId}
+            label="quiz result"
+          />
+        )}
         <div className="info-card">
           <BreedInfoCard breedId={result.match?.id || result.matchId} breedName={resultName} />
           <h2>Useful Next Steps</h2>
