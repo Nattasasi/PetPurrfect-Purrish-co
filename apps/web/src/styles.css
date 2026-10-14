@@ -1446,7 +1446,7 @@ section h2{
 }
 
 .quiz-card--result{
-    max-width:760px;
+    max-width:1040px;
     padding:42px clamp(24px, 5vw, 68px) 50px;
 }
 
@@ -1483,7 +1483,7 @@ section h2{
 }
 
 .quiz-card--result .result-summary{
-    max-width:600px;
+    max-width:800px;
     margin:0 auto 20px;
     color:#5d5356;
     font-size:1.12rem;
@@ -2286,10 +2286,36 @@ section h2{
     margin:0 0 12px;
 }
 
-.breed-info-note summary{
+.breed-info-heading{
+    margin:0;
+    color:#8a4b66;
+    font-size:1.05rem;
+    text-align:left;
+}
+
+.breed-info-sources{
+    text-align:left;
+    font-size:.9rem;
+}
+
+.breed-info-sources summary{
     cursor:pointer;
     color:#8a4b66;
     font-weight:700;
+}
+
+.breed-info-sources p{
+    margin:8px 0 0;
+}
+
+.info-card .breed-care-list li{
+    margin:0;
+    padding:14px 16px;
+    min-height:0;
+}
+
+.info-card .breed-care-list li::before{
+    display:none;
 }
 
 .breed-info-note p{
@@ -2339,7 +2365,9 @@ section h2{
 
 .info-card li{
     margin-bottom:15px;
-    padding-left:30px;
+    padding-left:44px;
+    min-height:30px;
+    line-height:1.6;
     position:relative;
     color:#666;
 }
@@ -2348,9 +2376,9 @@ section h2{
     content:"";
     position:absolute;
     left:0;
-    top:.15em;
-    width:40px;
-    height:40px;
+    top:-2px;
+    width:30px;
+    height:30px;
     background:url("/business_assets/purrish_pet-06.png") center/contain no-repeat;
 }
 
@@ -3264,4 +3292,73 @@ textarea:focus{
     font-weight:700;
     text-transform:uppercase;
     letter-spacing:.06em;
+}
+
+.toast{
+    position:fixed;
+    left:50%;
+    bottom:28px;
+    z-index:3000;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    max-width:calc(100vw - 32px);
+    padding:14px 18px;
+    border-radius:16px;
+    background:#2f2a2b;
+    color:#fff;
+    box-shadow:0 14px 40px rgba(0,0,0,.25);
+    transform:translateX(-50%);
+    animation:toastIn .25s ease;
+}
+
+.toast--ok{ border-left:5px solid #53aa81; }
+.toast--error{ border-left:5px solid #e0526d; }
+.toast a{ color:var(--primary); font-weight:700; white-space:nowrap; }
+.toast button{ border:0; background:transparent; color:#bbb; cursor:pointer; }
+
+@keyframes toastIn{
+    from{ opacity:0; transform:translate(-50%,12px); }
+    to{ opacity:1; transform:translate(-50%,0); }
+}
+
+.save-modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:3000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(47,42,43,.5);
+}
+
+.save-modal{
+    width:min(440px,100%);
+    padding:32px 28px;
+    border-radius:24px;
+    background:#fff;
+    text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,.25);
+}
+
+.save-modal h2{ margin:0 0 10px; font-size:1.6rem; }
+.save-modal p{ margin:0 0 22px; color:#5d5154; line-height:1.55; }
+
+.save-modal-actions{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.save-modal-actions .btn{ width:100%; box-sizing:border-box; text-align:center; }
+
+.save-modal-skip{
+    margin-top:14px;
+    border:0;
+    background:transparent;
+    color:#8c8083;
+    font:inherit;
+    cursor:pointer;
+    text-decoration:underline;
 }

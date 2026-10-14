@@ -43,8 +43,8 @@ export default function BreedInfoCard({ breedId, breedName }) {
             <div><strong>Adoption</strong><span>{breedInfo.info.adoption?.url ? <a href={breedInfo.info.adoption.url} target="_blank" rel="noreferrer">View current listings{breedInfo.info.adoption.location ? ` in ${breedInfo.info.adoption.location}` : ""}</a> : (breedInfo.info.adoption?.message || "Live listings unavailable")}</span></div>
           </div>
           {(breedInfo.info.careConsiderations?.length > 0 || breedInfo.info.healthNote) && (
-            <details className="breed-info-note">
-              <summary>Care considerations</summary>
+            <div className="breed-info-note">
+              <h3 className="breed-info-heading">Care considerations</h3>
               <ul className="breed-care-list">
                 {(breedInfo.info.careConsiderations?.length > 0
                   ? breedInfo.info.careConsiderations
@@ -56,21 +56,23 @@ export default function BreedInfoCard({ breedId, breedName }) {
                   </li>
                 ))}
               </ul>
-            </details>
+            </div>
           )}
           {breedInfo.info.sources?.length > 0 && (
-            <p className="breed-info-sources">
-              Current-info sources:{" "}
-              {breedInfo.info.sources.map((source, index) => (
-                <span key={source.url}>
-                  {index > 0 && ", "}
-                  <a href={source.url} target="_blank" rel="noreferrer">{source.title}</a>
-                </span>
-              ))}
-              {breedInfo.info.source?.includes("brave-search") && (
-                <> · Search results provided by <a href="https://brave.com/search/api/" target="_blank" rel="noreferrer">Brave</a></>
-              )}
-            </p>
+            <details className="breed-info-sources">
+              <summary>Info sources</summary>
+              <p>
+                {breedInfo.info.sources.map((source, index) => (
+                  <span key={source.url}>
+                    {index > 0 && ", "}
+                    <a href={source.url} target="_blank" rel="noreferrer">{source.title}</a>
+                  </span>
+                ))}
+                {breedInfo.info.source?.includes("brave-search") && (
+                  <> · Search results provided by <a href="https://brave.com/search/api/" target="_blank" rel="noreferrer">Brave</a></>
+                )}
+              </p>
+            </details>
           )}
           <p className="breed-info-disclaimer">Breed information is a general guide, not veterinary advice. Price links and adoption listings are location-aware where supported; verify availability and fees with the linked provider.</p>
         </>

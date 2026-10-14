@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { exportStickerResultImage, createStickerResultImageFile } from "../lib/shareImage";
 import { createPetDebugImage, runPetInference } from "../lib/cv/inference";
 import { composeStickerImage, getMatchedPresetInfo } from "../lib/stickerComposer";
@@ -6,7 +7,7 @@ import { useInMemoryPageState } from "../lib/inMemoryPageState";
 import { generateStickerCaptions } from "../lib/apiClient";
 import { trackStickerGeneration } from "../lib/analytics";
 import ShareResultCard from "../components/share/ShareResultCard";
-import SaveStickerPrompt from "../components/SaveStickerPrompt";
+import StickerSaveFlow from "../components/StickerSaveFlow";
 import ProductRecommendations from "../components/products/ProductRecommendations";
 
 function capitalize(value) {
@@ -21,6 +22,7 @@ const DEBUG_STICKERS = [
 ];
 
 export default function StickerPage() {
+  const location = useLocation();
   const inputRef = useRef(null);
   const stickerResultRef = useRef(null);
   const [imageUrl, setImageUrl] = useInMemoryPageState("sticker.imageUrl", "");
@@ -262,6 +264,9 @@ export default function StickerPage() {
 
   return (
     <>
+      {isGenerated && analysisResult?.validPet && composedStickerUrl && (
+        <StickerSaveFlow stickerUrl={composedStickerUrl} breed={analysisResult.breed} active={location.pathname === "/pet"} />
+      )}
       <section className="page-header">
         <h1><img src="/business_assets/purrish_pet-06.png" alt="" className="inline-pet-icon" /> Purrify</h1>
         <p>
@@ -375,7 +380,6 @@ export default function StickerPage() {
 
               <div className="sticker-result-meta">
                 <p className="sticker-detection">Detected: {petDescriptor}</p>
-                <SaveStickerPrompt key={composedStickerUrl} stickerUrl={composedStickerUrl} breed={analysisResult.breed} />
               </div>
 
               <ShareResultCard

@@ -1,4 +1,4 @@
-import { NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import HomePage from "./pages/HomePage";
 import QuizPage from "./pages/QuizPage";
@@ -114,7 +114,7 @@ export default function App() {
         </div>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/quiz/result" element={<QuizResultPage />} />
+          <Route path="/quiz/result" element={<Navigate to="/quiz" replace />} />
           <Route path="/quiz/result/:id" element={<QuizResultPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />

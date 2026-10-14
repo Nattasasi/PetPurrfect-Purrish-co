@@ -24,7 +24,6 @@ export default function ShareResultCard({
   shareText,
   shareCaptions = [],
   captionsLoading = false,
-  onDownload,
   getShareFile,
   resultId = null,
   sharePath = null,
@@ -230,11 +229,6 @@ export default function ShareResultCard({
               <button type="button" className="share-text-button" onClick={copyLink}>
                 <i className="fas fa-link" aria-hidden="true" /> {copyState}
               </button>
-              {onDownload && (
-                <button type="button" className="share-text-button share-native-button" onClick={onDownload}>
-                  <i className="fas fa-download" aria-hidden="true" /> Download img
-                </button>
-              )}
             </div>
           </article>
         </div>,

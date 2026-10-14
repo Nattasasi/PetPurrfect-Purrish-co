@@ -4,12 +4,13 @@ import staticQuizQuestions from "../data/quizQuestions.json";
 import { scoreQuiz } from "../lib/quizScoring";
 import { postJson, getJson, createSessionId } from "../lib/apiClient";
 import { getPetImageById, resolvePetImageUrl } from "../lib/petImages";
-import { exportQuizResultImage, createQuizResultImageFile } from "../lib/shareImage";
+import { createQuizResultImageFile } from "../lib/shareImage";
 import { useInMemoryPageState } from "../lib/inMemoryPageState";
 import { buildPersonalitySummary, matchStrengthLabel } from "../lib/personalityInsights";
 import { trackViewQuiz, trackStartQuiz, trackCompleteQuiz } from "../lib/analytics";
 import ShareResultCard from "../components/share/ShareResultCard";
 import BreedInfoCard from "../components/BreedInfoCard";
+import QuizSaveFlow from "../components/QuizSaveFlow";
 
 const RESULT_STORAGE_KEY = "purrishco.quiz.result.v2";
 const STATIC_QUESTION_COUNT = 5;
@@ -502,6 +503,7 @@ export default function QuizPage() {
 
   return (
     <>
+      {submitted && <QuizSaveFlow resultId={apiResult?.persistence?.id} sessionId={sessionId} active={location.pathname === "/quiz"} />}
       <section className="page-header">
         <h1><img src="/business_assets/purrish_pet-07.png" alt="" className="inline-pet-icon" /> Purrsonality</h1>
         <p>Discover which pet matches your personality through our fun AI-powered quiz.</p>
@@ -641,11 +643,6 @@ export default function QuizPage() {
                   shareCaptions={displayResult.shareCaptions}
                   crossPromoText="Want to turn this personality into a personalized pet sticker?"
                   crossPromoPath="/pet"
-                  onDownload={() => exportQuizResultImage({
-                    match: { name: displayResult.name, confidence: displayResult.confidence },
-                    summary: displayResult.summary,
-                    topTraits: scoring.topTraits
-                  })}
                   getShareFile={() => createQuizResultImageFile({
                     match: { name: displayResult.name, confidence: displayResult.confidence },
                     summary: displayResult.summary,
