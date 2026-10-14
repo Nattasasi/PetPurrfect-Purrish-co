@@ -631,6 +631,12 @@ export default function QuizPage() {
                   </div>
                 </section>
               )}
+              {debugTools && apiResult?.shareCaptionSource && (
+                <p className="quiz-hint">
+                  Test info: captions from {apiResult.shareCaptionSource}
+                  {apiResult.shareCaptionFallbackReason ? ` (${apiResult.shareCaptionFallbackReason})` : ""}
+                </p>
+              )}
               <BreedInfoCard breedId={displayResult.id} breedName={displayResult.name} />
               <div className="quiz-buttons">
                 <button className="btn btn-outline" type="button" onClick={resetQuiz}>

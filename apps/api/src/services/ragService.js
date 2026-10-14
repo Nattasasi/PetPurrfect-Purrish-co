@@ -54,7 +54,7 @@ User's quiz trait profile: ${JSON.stringify(traits)}
 Write a 2-3 sentence explanation of why "${rankedCandidates[0].name}" is the best match for this user, grounded strictly in the retrieved profile data above. Do not mention the other candidates.`;
 }
 
-async function callOllama(prompt) {
+async function callOllama(prompt, { json = false, maxTokens = 300 } = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), OLLAMA_TIMEOUT_MS);
 
@@ -67,10 +67,11 @@ async function callOllama(prompt) {
         model: env.ollama.model,
         prompt,
         stream: false,
+        ...(json ? { format: "json" } : {}),
         options: {
           temperature: 0.4,
           num_ctx: env.ollama.contextLength,
-          num_predict: 300
+          num_predict: maxTokens
         }
       }),
       signal: controller.signal
@@ -152,33 +153,33 @@ Rules:
 - Emojis are optional.`;
 }
 
-function parseShareCaptions(raw, fallback) {
-  try {
-    const jsonText = raw.match(/\{[\s\S]*\}/)?.[0];
-    const parsed = JSON.parse(jsonText || "{}");
-    const captions = Array.isArray(parsed.captions)
-      ? parsed.captions
-        .filter((caption) => typeof caption === "string")
-        .map((caption) => caption.trim())
-        .filter((caption) => caption.length > 0 && caption.length <= MAX_SHARE_CAPTION_LENGTH)
-        .slice(0, MAX_SHARE_CAPTIONS)
-      : [];
+function parseShareCaptions(raw) {
+  const jsonText = raw.match(/\{[\s\S]*\}/)?.[0];
+  const parsed = JSON.parse(jsonText || "{}");
+  const captions = Array.isArray(parsed.captions)
+    ? parsed.captions
+      .filter((caption) => typeof caption === "string")
+      .map((caption) => caption.trim())
+      .filter((caption) => caption.length > 0 && caption.length <= MAX_SHARE_CAPTION_LENGTH)
+      .slice(0, MAX_SHARE_CAPTIONS)
+    : [];
+  if (captions.length !== MAX_SHARE_CAPTIONS) throw new Error(`expected_${MAX_SHARE_CAPTIONS}_valid_captions_got_${captions.length}`);
+  return captions;
+}
 
-    return captions.length === MAX_SHARE_CAPTIONS ? captions : fallback;
-  } catch {
-    return fallback;
+// source is "ollama" or "fallback"; reason says why the static captions were used.
+export async function generateShareCaptionsWithSource(selected, traits, context = "pet personality quiz result") {
+  try {
+    const raw = await callOllama(buildShareCaptionPrompt(selected, traits, context), { json: true, maxTokens: 500 });
+    return { captions: parseShareCaptions(raw), source: "ollama", reason: null };
+  } catch (error) {
+    console.warn(`[share-captions] using fallback captions: ${error?.message || error}`);
+    return { captions: buildShareCaptionFallback(selected, context), source: "fallback", reason: error?.message || "unknown" };
   }
 }
 
 export async function generateShareCaptions(selected, traits, context = "pet personality quiz result") {
-  const fallback = buildShareCaptionFallback(selected, context);
-
-  try {
-    const raw = await callOllama(buildShareCaptionPrompt(selected, traits, context));
-    return parseShareCaptions(raw, fallback);
-  } catch {
-    return fallback;
-  }
+  return (await generateShareCaptionsWithSource(selected, traits, context)).captions;
 }
 
 function buildGrounding(selected, sourceLabel) {
@@ -240,11 +241,11 @@ export async function evaluateQuiz(payload = {}) {
   const [groundedSummaryResult, personalitySummaryResult, shareCaptionsResult] = await Promise.all([
     generateGroundedSummary(traits, groundingCandidates),
     generatePersonalitySummary(traits, payload.topTraits || [], selected),
-    generateShareCaptions(selected, traits)
+    generateShareCaptionsWithSource(selected, traits)
   ]);
   const groundedSummary = groundedSummaryResult;
   const personalitySummary = personalitySummaryResult;
-  const shareCaptions = shareCaptionsResult;
+  const shareCaptions = shareCaptionsResult.captions;
   const breedImageUrl = await fetchBreedImageUrl(queryName, selected.petType);
   const knowledgeBaseSource = selected.source || "fallback-profile";
 
@@ -271,6 +272,8 @@ export async function evaluateQuiz(payload = {}) {
     personalitySummary,
     traits,
     shareCaptions,
+    shareCaptionSource: shareCaptionsResult.source,
+    shareCaptionFallbackReason: shareCaptionsResult.reason,
     shareCaptionModel: env.ollama.model
   };
 
