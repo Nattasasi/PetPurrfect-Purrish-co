@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import SaveFlow from "./SaveFlow";
 import { useAuth } from "../auth/AuthProvider.js";
 import { ref, uploadBytes } from "firebase/storage";
@@ -11,11 +12,26 @@ function stickerKey(url) {
   return `sticker:${url.length}:${hash}`;
 }
 
+// Composed stickers are ~4500px; downscale so the PNG fits the 2MB storage rule.
+async function downscaleToPng(url, maxSize = 1024) {
+  const image = new Image();
+  image.src = url;
+  await image.decode();
+  const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(image.naturalWidth * scale);
+  canvas.height = Math.round(image.naturalHeight * scale);
+  canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("unsupported_image"))), "image/png"));
+}
+
 export default function StickerSaveFlow({ stickerUrl, breed, active }) {
   const { user } = useAuth();
+  // Identical composites hash the same, so add a nonce to keep a repeat generation from being treated as already saved/dismissed.
+  const itemId = useMemo(() => (stickerUrl ? `${stickerKey(stickerUrl)}:${Date.now()}` : null), [stickerUrl]);
 
   const save = async (getIdToken) => {
-    const blob = await (await fetch(stickerUrl)).blob();
+    const blob = await downscaleToPng(stickerUrl);
     if (!/^image\/(png|webp|jpeg)$/.test(blob.type)) throw new Error("unsupported_image");
     const storagePath = `users/${user.uid}/stickers/${crypto.randomUUID()}.${blob.type.split("/")[1]}`;
     await uploadBytes(ref(getCustomerStorage(), storagePath), blob, { contentType: blob.type });
@@ -24,7 +40,7 @@ export default function StickerSaveFlow({ stickerUrl, breed, active }) {
 
   return (
     <SaveFlow
-      itemId={stickerUrl ? stickerKey(stickerUrl) : null}
+      itemId={itemId}
       save={save}
       savedText="Sticker saved to your profile"
       errorText="Couldn't save your sticker."

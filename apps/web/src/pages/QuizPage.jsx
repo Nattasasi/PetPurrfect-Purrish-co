@@ -644,6 +644,8 @@ export default function QuizPage() {
                 </button>
                 <ShareResultCard
                   title="Share your quiz result"
+                  resultId={apiResult?.persistence?.id || null}
+                  sharePath={apiResult?.persistence?.id ? `/quiz/result/${apiResult.persistence.id}` : null}
                   subtitle={`${displayResult.name} · ${matchStrengthLabel(displayResult.confidence || 0)}`}
                   shareText={`The Purrish&Co. quiz says I'm a match for a ${displayResult.name}! Curious what pet fits YOU? Take the quiz!`}
                   shareCaptions={displayResult.shareCaptions}
